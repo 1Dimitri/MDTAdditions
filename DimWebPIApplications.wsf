@@ -1,0 +1,393 @@
+<job id="DimWebPIApplications">
+	<script language="VBScript" src="ZTIUtility.vbs"/>
+	<script language="VBScript" src="ZTIConfigFile.vbs"/>
+	<script language="VBScript">
+
+' // ***************************************************************************
+' // 
+
+' // 
+' //                 Dimitri, 04-2014
+' // Microsoft Deployment Toolkit Solution Accelerator
+' //
+' // File:      DimWebPIApplications.wsf
+' // 
+' // Version:   6.2.5019.0
+' // 
+' // Purpose:   Install a list of applications from a WebPI feed
+' // 
+' // Usage:     cscript.exe [//nologo] DimWebPIApplications.wsf [/debug:true]
+' // 
+' // ***************************************************************************
+
+Option Explicit
+RunNewInstance
+
+
+'//----------------------------------------------------------------------------
+'//  Main Class
+'//----------------------------------------------------------------------------
+
+Class DimWebPIApplications
+
+	'//----------------------------------------------------------------------------
+	'//  Class instance variable declarations
+	'//----------------------------------------------------------------------------
+
+	Dim oApplications
+	Dim oInstalledApplications
+	Dim sBDDRun
+	Dim aLanguages
+	Dim oDependentApplications
+	
+	Dim g_ApplicationSuccessCodes
+	
+
+	'//----------------------------------------------------------------------------
+	'//  Constructor to initialize needed global objects
+	'//----------------------------------------------------------------------------
+
+	Private Sub Class_Initialize
+
+		g_ApplicationSuccessCodes = " 0 3010 "
+	End Sub
+	
+	
+	'//----------------------------------------------------------------------------
+	'//  Main routine
+	'//----------------------------------------------------------------------------
+
+	Function Main
+	
+		Dim iRetVal, sGuid, sCmd, bValidProcessorType
+		Dim iApplicationCount, iPercent
+		Dim sApplicationType
+		
+		Dim sTemp
+		Dim sTempFolder
+		
+		Dim sExeFile
+		
+		Dim sDefaultWebPIFeed
+		
+		Dim sInstallersFolder
+		
+
+		iRetVal = Success
+
+		' Validate that are not restarting from a failed install.
+
+		If ucase(oEnv("SystemDrive")) = "X:" Then
+			oLogging.CreateEntry "Environment Error: ManualRetry (From DimWebPIApplications).", LogTypeInfo
+
+			oEnvironment.Item("LTISuspend") = "LiteTouch is trying to install applications." & _
+				vbNewLine & "This cannot be performed in Windows PE." & _
+				vbNewLine & "If booting from a USB Flash Disk, please remove all drives before restarting." & _
+				vbNewLine & "Otherwise, ensure the hard disk is selected first in the BIOS boot order."
+			oEnvironment.Item("SMSTSRebootRequested") = "true"
+			oEnvironment.Item("SMSTSRetryRequested") = "true"
+			Main = SUCCESS
+			Exit Function
+		End if
+
+
+		' Prepare the Deployment Root Directory
+
+		If oEnvironment.Item("ResourceRoot") = "" then
+			oEnvironment.Item("ResourceRoot") = oFSO.GetParentFolderName(oUtility.ScriptDir)
+		End if
+
+		' Copy the executable locally
+		sTempFolder= oEnv("TEMP") & "\Tools"
+		sTemp= oEnv("TEMP") & "\Tools\"
+		
+		If oFSO.FolderExists(sTempFolder) Then
+			oLogging.CreateEntry "Folder [" & sTempFolder & "] already exists", LogTypeInfo
+		Else
+			oLogging.CreateEntry "Folder [" & sTempFolder & "] must be created", LogTypeInfo
+			oFSO.CreateFolder sTempFolder
+		End If
+		
+		If not oFSO.FileExists(sTemp & "webpicmd.exe") Then
+			oLogging.CreateEntry "Copying executables into " & sTemp, LogTypeInfo
+			
+			For each sExeFile in Array("webpicmd.exe","webpicmd.exe.config","Microsoft.Web.PlatformInstaller.dll")
+				oLogging.CreateEntry "Copying " & oEnvironment.Item("DeployRoot") & "\Tools\" & oEnvironment.Item("Architecture") & "\" & sExeFile, LogTypeInfo
+				oFSO.CopyFile oEnvironment.Item("DeployRoot") & "\Tools\" & oEnvironment.Item("Architecture") & "\" & sExeFile, sTemp, True	
+			Next
+			
+		End If
+		
+		
+		sDefaultWebPIFeed = ""
+		If oEnvironment.Item("DefaultWebPIFeed") <> "" then
+			sDefaultWebPIFeed = oEnvironment.Item("DefaultWebPIFeed") 
+		End if
+		
+		oLogging.CreateEntry "DefaultwebPIFeed = " & sDefaultWebPIFeed, LogTypeInfo
+
+
+		' Find our stub program
+
+		iRetVal = oUtility.FindFile("bddrun.exe", sBDDRun)
+		TestAndLog iRetVal, "Find File: bddrun.exe"
+
+
+		if isempty(aLanguages) then
+			aLanguages = array( cstr(GetLocale), right("0000" & hex(GetLocale),4), "0x" & right("0000" & hex(GetLocale),4), _
+					cstr(GetLocale() and &h03ff), right("0000" & hex(GetLocale() and &h03ff),4), "0x" & right("0000" & hex(GetLocale() and &h03ff),4)  )
+		end if
+		oLogging.CreateEntry "Language/Locale Identified (in order of precedence): " & join(aLanguages,","), LogTypeInfo
+
+
+		' Load the list of already-installed applications (probably doesn't exist yet)
+
+		Set oInstalledApplications = oEnvironment.ListItem("WebPIInstalledProducts")
+
+		Set oDependentApplications = oEnvironment.ListItem("WebPIDependentProducts")
+
+
+		' Check that an individual application guid wasn't passed via the commmand line.
+		' This is a mandatory single install intiate by a Task Sequence action.
+        
+		If oEnvironment.Item("WebPIProductsSuccessCodes") <> "" then
+		g_ApplicationSuccessCodes = " " & oEnvironment.Item("WebPIProductsSuccessCodes") & " "
+		End if
+		
+		If oEnvironment.Item("WebPIProductName") <> "" Then
+			oLogging.CreateEntry "Mandatory Single Product install indicated.  " & oEnvironment.Item("WebPIProductName"), LogTypeInfo
+
+			iRetVal = InstallApplication(oEnvironment.Item("WebPIProductName"), 0, sDefaultWebPIFeed)
+
+			If iRetVal = 3010 then  ' Reboot requested
+
+				' Set properties to indicate a reboot is needed and this script should be re-executed
+
+				oEnvironment.Item("SMSTSRebootRequested") = "true"
+				oEnvironment.Item("SMSTSRetryRequested") = "true"
+
+				oLogging.CreateEntry "Exiting to initiate a reboot with retry (to pick up where we left off)", LogTypeInfo
+				Main = Success
+
+				Exit Function
+
+			End if
+
+			Main = 0   ' Always succeed.  The errors and warnings from above will be reported so the process can continue.
+			Exit Function
+		End If
+		
+		' Load the list of Applications stored in the environment. First we being by processing the MandatoryApplication
+		' and then follow with the normal user selected Applications.
+
+		For Each sApplicationType in Array("WebPIMandatoryProducts", "WebPIProducts")
+			oLogging.CreateEntry "Processing Product Type: " & sApplicationType, LogTypeInfo
+
+			Set oApplications = oEnvironment.ListItem(sApplicationType)
+
+			If oApplications.Count = 0 then
+				oLogging.CreateEntry "Product List is empty, exiting DimWebPIApplications.wsf", LogTypeInfo
+				Main = Success
+			Else
+
+				' Process the list
+
+				oLogging.CreateEntry "Ready to install products: " , LogTypeInfo
+				iApplicationCount = 0
+				For each sGuid in oApplications
+
+					iApplicationCount = iApplicationCount + 1
+					iPercent = CLng(iApplicationCount / oApplications.Count * 100)
+					iRetVal = InstallApplication(sGuid, iPercent, sDefaultWebPIFeed)
+
+					If iRetVal = 3010 then  ' Reboot requested
+
+						' Set properties to indicate a reboot is needed and this script should be re-executed
+
+						oEnvironment.Item("SMSTSRebootRequested") = "true"
+						oEnvironment.Item("SMSTSRetryRequested") = "true"
+
+						oLogging.CreateEntry "Exiting to initiate a reboot with retry (to pick up where we left off)", LogTypeInfo
+						iRetVal = Success
+
+						Exit Function
+
+					End if
+
+				Next
+
+			End if
+
+		Next
+
+
+		'Cleanup and Exit
+		
+		if InStr(UCase(oEnvironment.Item("KEEPWEBPI")),"INSTALLERS")=0 Then
+			sInstallersFolder = oShell.ExpandEnvironmentStrings("%LOCALAPPDATA%\Microsoft\Web Platform Installer\installers")
+			oFileHandling.RemoveFolder sInstallersFolder
+		End If	
+
+		'Main = iRetVal
+		' Don't break all install if some products cannot be installed
+		Main = Success
+
+	End Function
+	
+	
+		
+
+	Function InstallApplication(sGuid, iPercent, sWebPIDefaultFeed)
+
+		Dim oNode
+		Dim oDependentNode
+		Dim sDependentGuid
+		Dim sDir
+		Dim sCmd
+		Dim bValidProcessorType
+		Dim iResult
+		Dim sError
+		Dim sKey
+		Dim sValueName
+		Dim sValue
+		Dim oSupportedPlatformNode
+		Dim sSupportedPlatform
+		Dim bSupportedPlaformRequired
+		Dim bSupportedPlatformFound
+		Dim bModern
+
+
+		Dim sWebPIFeed
+		Dim sWebPIName
+		Dim i
+		
+		InstallApplication = Success
+		bSupportedPlaformRequired = False
+
+
+
+		' Calculate if there's a feed to add
+		sWebPIFeed = sWebPIDefaultFeed
+		sGuid = Trim(sGuid)
+		i = InStr(sGuid," ")
+		If i > 0 Then
+			sWebPIFeed = Left(sGuid,i-1)
+			sWebPIName = Right(sGuid,len(sGuid)-i)
+		Else
+			sWebPIName = sGuid
+		End If
+
+		' Check if application has already been installed
+
+		If oInstalledApplications.Exists(sWebPIName) then
+			oLogging.CreateEntry "Product " & sWebPIName & " has already been installed, will not install again.", LogTypeInfo
+			Exit Function
+		End if
+
+
+		' Log details of the application
+
+		oLogging.CreateEntry "################", LogTypeInfo
+		oLogging.CreateEntry "Entry: [" & sGuid & "]", LogTypeInfo
+		' oLogging.CreateEntry "Name:  " & oUtility.SelectSingleNodeString(oNode,"Name"), LogTypeInfo
+		oLogging.CreateEntry "Name: [" & sWebPIName & "]", LogTypeInfo
+		oLogging.CreateEntry "Feed: [" & sWebPIFeed & "]", LogTypeInfo
+		oLogging.CreateEntry "################", LogTypeInfo
+
+
+		' Check if application has already been installed.  Could have been installed by a dependent application
+
+		If oInstalledApplications.Exists(sGuid) then
+			oLogging.CreateEntry "Product [" & sGuid & "] has already been installed, will not install again.", LogTypeInfo
+			Exit Function
+		End if
+
+
+
+
+		sCmd = " /Install /Products:" & sWebPIName & " /XML:" & sWebPIFeed & " /AcceptEula /SuppressReboot" 
+		' Launch Command
+
+		If sCmd = "" then
+			oLogging.CreateEntry vbTab & vbTab & "Run Command is missing. ", LogTypeInfo
+		Else
+			oLogging.ReportProgress "Installing " & sWebPIName, iPercent
+			oLogging.CreateEntry vbTab & vbTab & "Run Command: webpicmd " & sCmd, LogTypeInfo
+			oLogging.CreateEvent 41031, LogTypeInfo, "WebPIApplication installing product ", Array(sWebPIFeed, sWebPIName)
+
+			On Error Resume Next
+
+
+			'If bModern then
+			'	iResult = oShell.Run(sCmd, 0, true)
+			'Else
+			'	iResult = oUtility.RunWithHeartbeat(sCmd)
+			'End if
+			iResult = oUtility.FindExeAndRunWithLogging( oEnv("TEMP") & "\Tools\webpicmd.exe", sCmd )
+
+			If Err then
+				iResult = Err.number
+				sError = Err.Description
+				oLogging.CreateEvent 41032, LogTypeError, "Error installing product " & sWebPIName & ": " & sError, Array(sWebPIFeed, sWebPIName, sError)
+			ElseIf instr(1,g_ApplicationSuccessCodes," " & iResult & " ",vbTextCompare ) <> 0 then
+				oLogging.CreateEvent 41033, LogTypeInfo, "product " & sWebPIName & " installed successfully", Array(sWebPIFeed, sWebPIName, iResult)
+				If iResult <> 3010 then
+					' Normalize the results to either 3010 or 0 if successful.
+					iResult = 0
+				End if
+			Else
+				oLogging.CreateEvent 41034, LogTypeError, "product " & sWebPIName & " returned an unexpected return code: " & iResult, Array(sWebPIFeed, sWebPIName, iResult)
+			End if
+
+			On Error Goto 0
+
+		End if
+
+		' Update the list of installed applications
+
+		oInstalledApplications.Add sGuid, ""
+		Set oEnvironment.ListItem("WebPIInstalledProducts") = oInstalledApplications
+
+		'See if a reboot is needed
+
+
+		If iResult<>0 Then
+			If iResult=3010 Then
+				oLogging.CreateEntry sWebPIName & " needs a reboot to finish", LogTypeInfo
+			Else
+				oLogging.CreateEntry sWebPIName & " installation resulted in error code " & iResult, LogTypeWarning
+			End if
+		End If
+		InstallApplication = iResult
+
+	End Function
+	
+
+	Function CheckAppXPolicy
+		oShell.RegWrite "HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\Appx\AllowAllTrustedApps", 1, "REG_DWORD"
+	End function
+
+
+	Function InstallCerts(sDir)
+		Dim iRC
+		Dim oFile
+		Dim sCmd
+
+		For each oFile in oFSO.GetFolder(sDir).Files
+			If UCase(Right(oFile.Name,4)) = ".CER" then
+
+				sCmd = "certutil.exe -addstore root """ & oFile.Path & """"
+				oLogging.CreateEntry "Importing certificate: " & sCmd, LogTypeInfo
+				iRC = oShell.Run(sCmd, 0, true)
+				oLogging.CreateEntry "Return code from CERTUTIL = " & iRC, LogTypeInfo
+				
+			End if
+		Next
+
+	End function
+
+End class
+
+	</script>
+</job>
+
