@@ -1,0 +1,82 @@
+
+<job id="DimNetConfigServer">
+   <script language="VBScript" src="ZTIUtility.vbs"/>
+   
+   <script language="VBScript">
+' // ***************************************************************************
+' // 
+' // File:      $DimNetConfigServer.wsf
+' // 
+' // Version:   1.0 
+' // 
+' // Purpose:   net config server /srvcomment
+' // 
+' // Usage:     cscript DimNetConfigServer.wsf [/debug:true]
+' // 
+' // ***************************************************************************
+
+Option Explicit
+RunNewInstance
+
+'//—————————————————————————-
+'//  Global Constants
+'//—————————————————————————-
+
+
+'//—————————————————————————-
+'//  Main Class
+'//—————————————————————————-
+
+Class DimNetConfigServer
+
+    '//—————————————————————————-
+    '//  Global constant and variable declarations
+    '//—————————————————————————-
+
+    Dim iRetVal
+
+    '//—————————————————————————-
+    '//  Constructor to initialize needed global objects
+    '//—————————————————————————-
+
+    Private Sub Class_Initialize
+
+    End Sub
+    '//—————————————————————————-
+    '//  Main routine
+    '//—————————————————————————-
+
+    Function Main
+
+	'Dim rc 
+    Dim sCmd
+	
+    
+    If oEnvironment.Item("SERVERCOMMENT")="" Then
+        oLogging.CreateEntry "No Server Comment SERVERCMMENT Variable Found, nothing to do", LogTypeInfo
+        
+        Exit Function
+    End If
+    
+	sCMd = "net config server /srvcomment:" & chr(34) & oEnvironment.Item("SERVERCOMMENT") & chr(34)
+	 oLogging.CreateEntry "Cmd: [" & sCmd & "]", LogTypeInfo
+	 'rc = oUtility.RunWithHeartbeat "net config server /srvcomment:" & chr(34) & oEnvironment.Item("SERVERCOMMENT") & chr(34)
+	 oUtility.RunWithHeartbeat "net config server /srvcomment:" & chr(34) & oEnvironment.Item("SERVERCOMMENT") & chr(34)
+	 
+	 
+	 'If rc=Success Then 
+	'	oLogging.CreateEntry "Server comment set to: [" & oEnvironment.Item("SERVERCOMMENT") & "]", LogTypeInfo
+	'Else
+	 '   oLogging.CreateEntry "Error, Return Code = " & rc, LogTypeError
+	 'End If
+	 
+	  'oLogging.CreateEntry ", Return Code = " & rc, LogTypeInfo
+
+	  Main = Success
+	  
+    End Function
+
+End Class
+
+   </script>
+</job>
