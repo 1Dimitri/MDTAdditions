@@ -1,0 +1,55 @@
+' After 
+' 	Private Sub Class_Initialize
+'	End Sub
+	'DJ
+	'//----------------------------------------------------------------------------
+	'//  DNS Suffix Search Order Settings, searched in variable SetupDNSSuffixSearchOder ot DNSSuffixSearchOrder
+	'//----------------------------------------------------------------------------
+    Function SetDNSSuffixSearchOrder
+	
+		Dim rc
+		Dim dicDNSSuffixes
+		Dim firstAdapter
+		Dim adapter
+		Dim oClass
+		
+        oLogging.CreateEntry "Entering DNS Suffixes Search Order Setting function", LogTypeInfo
+        Set dicDNSSuffixes = oEnvironment.ListItem("SetupDNSSuffixSearchOrder")
+		If dicDNSSuffixes.Count = 0 Then
+			oLogging.CreateEntry "SetupDNSSuffixSearchOrder not set, trying DNSSuffixSearchOrder", LogTypeInfo
+			Set dicDNSSuffixes = oEnvironment.ListItem("DNSSuffixSearchOrder")
+		End If
+        If dicDNSSuffixes.Count > 0  Then
+            oLogging.CreateEntry "Calling SetDNSSuffixSearchOrder", LogTypeInfo
+                ' get first element. Item does not work on collections
+                ' ItemIndex is Vista+, not tested yet
+            For each adapter in objNetworkAdapters
+                Set firstAdapter = adapter
+                Exit For
+            Next
+            ' This is a static method...
+            Set oClass = objWMI.Get(firstAdapter.Path_.class)
+            rc = oClass.SetDNSSuffixSearchOrder(dicDNSSuffixes.Keys)
+            oLogging.CreateEntry "Return Code= " & rc, LogTypeInfo
+        Else
+            oLogging.CreateEntry "DNSSuffixSearchOrder not set, No DNS Suffixes to add", LogTypeInfo
+        End If
+        oLogging.CreateEntry "Leaving DNS Suffixes Search Order Setting function", LogTypeInfo
+		
+		SetDNSSuffixSearchOrder = rc
+		
+    End Function
+	' /DJ
+	
+	
+' Before  "If bIsDirtry = true and (If bIsDitry = true and ( oUtility.dicNetworkConnections.Count > 0 or oNetwork.EnumNetworkDrives.Count > 0 ) then
+
+			' DJ
+			SetDNSSuffixSearchOrder()
+			' /DJ
+			
+			'DJ: Wait for reconnection
+			oLogging.CreateEntry "Waiting before reconnecting", LogTypeInfo
+			WScript.Sleep 5000
+			'/DJ
+			
