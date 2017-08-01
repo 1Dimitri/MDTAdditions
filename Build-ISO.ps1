@@ -1,3 +1,4 @@
+
 function Import-Csv {
     <#
 
@@ -200,17 +201,23 @@ $patches | ForEach-Object {
 
             Write-Verbose $newfiles
              $_ | Add-Member -MemberType NoteProperty ProcessedNames @()
-             $newnames = $_.ProcessedNames
+             $o = $_
             $newfiles | Foreach-Object {
                Write-Verbose "Handling: $_ [$($_.FullName)]"
                $newfn = ("{0:000}-" -f $Order)+($_.Name)
                $newpath = Join-Path $TargetPath $newfn
                 Write-Verbose "Moving $_ to $newpath"
-                Move-Item $($_.FullName) $newpath
-                $newnames+=$newpath
+                Move-Item $($_.FullName) $newpath -Force
+                $o.ProcessedNames+=$newpath
+                Write-Verbose "New file names: $newpath"
               }
+              
 
        } # Get-Command
+       else {
+        Write-Verbose "transformation wasn't found/run correctly, using original file names"
+         $_ | Add-Member -MemberType NoteProperty ProcessedNames @($filepath)
+       } # else Get-Command
     } else {
       Write-Verbose "No transformation on files needed"
          $_ | Add-Member -MemberType NoteProperty ProcessedNames @($filepath)
@@ -225,12 +232,22 @@ param(
 [string[]] $Path
 )
   Write-Verbose "Removing Paths"
-  $Path | Remove-Item -Force -Recurse -EA SilentlyContinue
+  $mp = (Get-WindowsImage -Mounted).MountPath
+  $Path | ForEach-Object {
+    Write-Verbose "Removing $_"
+    if ($_ -in ((Get-WindowsImage -Mounted).MountPath)) {
+        # Mounted Dir is owned by Trusted Installer
+          Dismount-WindowsImage -Path $mp -Discard
+        }
+        else {
+        Remove-Item -Path $_ -Force -Recurse -EA SilentlyContinue
+        }
+    }
   Write-Verbose "Creating Paths"
   
   $Path | ForEach-Object { 
   Write-Verbose "Creating $_"
-  New-Item  -ItemType Directory -Path $_ | Out-Null
+  New-Item  -ItemType Directory -Path $_ -Ea SilentlyContinue | Out-Null
   }
 }
 
@@ -283,13 +300,23 @@ $Patches,
   # Add-WindowsPackage -PackagePath $PatchesDir -Path $MountedPath -LogPath $LogPath -NoRestart
   $Patches | ForEach-Object {
    
-   $LogPath = Join-Path $LogDir "$($_.LocalName).log"
+   $patch = $_
+   $_.ProcessedNames | Foreach-Object {
+   $fname = split-path $_ -Leaf
+   $LogPath = Join-Path $LogDir ($fname+'.log')
   
-    Add-WindowsPackage -PackagePath $_.LocalPath -Path $MountedPath -LogPath $LogPath -NoRestart -ScratchDirectory $TempDir
+    Write-Verbose "Add-WindowsPackage -PackagePath [$_] -Path [$MountedPath] -LogPath [$LogPath] -NoRestart -ScratchDirectory [$TempDir]"
+    Add-WindowsPackage -PackagePath $_ -Path $MountedPath -LogPath $LogPath -NoRestart -ScratchDirectory $TempDir    }
+
   
     if ($_.DismFlags -contains "remount") {
       Write-Verbose "remounting..."
+      $orderAsString = "{0:000}" -f $patch.Order
+      $LogPath = Join-Path $LogDir "$($orderAsString)-Dismount.log"
+      Write-Verbose "Dismount-WindowsImage -Path [$MountedPath] -Save -LogPath [$LogPath] -ScratchDirectory [$TempDir]"
       Dismount-WindowsImage -Path $MountedPath -Save -LogPath $LogPath -ScratchDirectory $TempDir
+      $LogPath = Join-Path $LogDir "$($orderAsString)-Mount.log"
+      Write-Verbose "Mount-WindowsImage -ImagePath [$ImagePath] -Index [$ImageIndex] -Path [$MountedPath] -LogPath [$LogPath] -ScratchDirectory [$TempDir]"
       Mount-WindowsImage -ImagePath $ImagePath -Index $ImageIndex -Path $MountedPath -LogPath $LogPath -ScratchDirectory $TempDir
       Write-Verbose "remounting done"
     }
@@ -303,8 +330,31 @@ $Patches,
 
 }
 
-$csv = Import-CSV 'E:\patchesround\win2008r2-patches-201706.csv' -TypeMap @{Order='Int';URL='String';DismFlags='String';PackageFlags='String'}
-Get-Patches -Patches $csv -TargetPath 'E:\downloads2' -TempDir 'Q:\TempCAB'
-#Apply-PatchesToIndexImage -PatchesDir 'E:\downloads2' -ImagePath Q:\install.wim -ImageIndex 1
+function Apply-PatchListToOS {
+param(
+[string] $SourceRoot,
+[string] $DestinationPath,
+[string] $TempPath,
+[string] $PatchesList
+)
+$InstallWimFolder = Join-Path $SourceRoot 'sources'
+$InstallWinPath = Join-Path $InstallWimFolder 'install.wim'
+New-Directory $TempPath
+$TempInstallWimPath = Join-Path $TempPath 'install.wim'
+$DestinationInstallWimPath = Join-Path (Join-Path $DestinationPath 'sources') 'install.wim'
+#$csv = Import-CSV 'E:\patchesround\win2008r2-patches-201706.csv' -TypeMap @{Order='Int';URL='String';DismFlags='String';PackageFlags='String';Comments='String'}
+$csv = Import-CSV $PatchesList -TypeMap @{Order='Int';URL='String';DismFlags='String';PackageFlags='String';Comments='String'}
+$Patches = Get-Patches -Patches $csv -TargetPath 'E:\downloads2' -TempDir 'Q:\TempCAB'
+Copy-Item $InstallWinPath $TempInstallWimPath -Force
+Write-Verbose "Getting WIM Details from $TempInstallWimPath"
+$ImageInfo = Get-WindowsImage -ImagePath $TempInstallWimPath 
+$ImageInfo.ImageIndex | ForEach-Object { Apply-PatchesToIndexImage -Patches $patches -ImagePath $TempInstallWimPath -ImageIndex $_ }
+New-Directory $DestinationPath
+robocopy $SourceRoot $DestinationPath /E /XF install.wim
+Copy-Item  $TempInstallWimPath $DestinationInstallWimPath -Force
+}
+
+#Example: Apply-PatchListToOS -SourceRoot 'H:\' -DestinationPath E:\result -TempPath Q:\TempWIM -PatchesList E:\patchesround\win2012r2-patches-201707.csv 
+##
 
 
