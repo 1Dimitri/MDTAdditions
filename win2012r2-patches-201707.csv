@@ -1,5 +1,5 @@
 Order,URL,DismFlags,PackageFlags,Comments
-1,http://download.windowsupdate.com/c/msdownload/update/software/updt/2015/04/windows8.1-kb3021910-x64_e291c0c339586e79c36ebfc0211678df91656c3d.msu,remount,,Servicing Stack update April 2015
-2,http://download.windowsupdate.com/c/msdownload/update/software/updt/2016/07/windows8.1-kb3172614-x64_e41365e643b98ab745c21dba17d1d3b6bb73cfcc.msu,,,July 2016 update rollup first one to use after April 2014/November 2014 update
+1,http://download.windowsupdate.com/d/msdownload/update/software/crup/2016/06/windows8.1-kb3173424-x64_9a1c9e0082978d92abee71f2cfed5e0f4b6ce85c.msu,remount,,Servicing Stack update July 2016
+2,http://download.windowsupdate.com/c/msdownload/update/software/updt/2016/07/windows8.1-kb3172614-x64_e41365e643b98ab745c21dba17d1d3b6bb73cfcc.msu,,,July 2016 Update
 3,http://download.windowsupdate.com/d/msdownload/update/software/updt/2016/08/windows8.1-kb3179574-x64_f0a5e2ff991aec5e6978aa808f287f1b21195d6e.msu,,,August 2016 update 
-4,http://download.windowsupdate.com/c/msdownload/update/software/secu/2017/07/windows8.1-kb4025336-x64_b13c98376d2b720889d7cd0aaed50f772100bc49.msu,,,July 2017 Quality and Security
+4,http://download.windowsupdate.com/d/msdownload/update/software/secu/2017/07/windows8.1-kb4025333-x64_b7373c4640f07e670e09b95624e8fd046085e201.msu,,,July 2017 Quality and Security
