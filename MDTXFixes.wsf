@@ -1,0 +1,93 @@
+
+<job id="MDTXFixes">
+   <script language="VBScript" src="ZTIUtility.vbs"/>
+   <script language="VBScript">
+' // ***************************************************************************
+' // 
+' // File:      $URL: svn://lupvs802/MDTRepo/trunk/MDTShare/Scripts/MDTXFixes.wsf $
+' // 
+' // Version:   $Rev: 155 $
+' // 
+' // Purpose:   
+' // 
+' // Usage:     cscript $URL: svn://lupvs802/MDTRepo/trunk/MDTShare/Scripts/MDTXFixes.wsf $[/debug:true]
+' // 
+' // ***************************************************************************
+
+Option Explicit
+RunNewInstance
+
+'//—————————————————————————-
+'//  Global Constants
+'//—————————————————————————-
+
+' Const SOMETHING = 99
+
+'//—————————————————————————-
+'//  Main Class
+'//—————————————————————————-
+
+Class MDTXFixes
+
+    '//—————————————————————————-
+    '//  Global constant and variable declarations
+    '//—————————————————————————-
+
+    Dim iRetVal
+
+    '//—————————————————————————-
+    '//  Constructor to initialize needed global objects
+    '//—————————————————————————-
+
+    Private Sub Class_Initialize
+
+    End Sub
+    '//—————————————————————————-
+    '//  Main routine
+    '//—————————————————————————-
+
+	Private Sub FixSlipStreamWMIWin2008R2
+		Dim strComputer, obj1, obj1elem, obj2set, obj2, obj3set, obj3, objWMIService
+		
+		oLogging.CreateEntry "Fixing WMI Errors with Windows 2008R2 SP1 Slipstreamed Media", LogTypeInfo
+		strComputer = "."
+		Set objWMIService = GetObject("winmgmts:{impersonationLevel=impersonate}!\\" & strComputer & "\root\subscription")
+		Set obj1 = objWMIService.ExecQuery("select * from __eventfilter where name='BVTFilter' and query='SELECT * FROM __InstanceModificationEvent WITHIN 60 WHERE TargetInstance ISA ""Win32_Processor"" AND TargetInstance.LoadPercentage > 99'")
+		For Each obj1elem in obj1
+			set obj2set = obj1elem.Associators_("__FilterToConsumerBinding")
+			set obj3set = obj1elem.References_("__FilterToConsumerBinding")
+			For each obj2 in obj2set
+				' WScript.echo "Deleting the object"
+				' WScript.echo obj2.GetObjectText_
+				oLogging.CreateEntry "Deleting object " & obj2.GetObjectText_, LogTypeInfo
+				obj2.Delete_
+			next
+			For each obj3 in obj3set
+				' WScript.echo "Deleting the object"
+				' WScript.echo obj3.GetObjectText_
+				oLogging.CreateEntry "Deleting object " & obj3.GetObjectText_, LogTypeInfo
+				obj3.Delete_
+			next
+			' WScript.echo "Deleting the object"
+			' WScript.echo obj1elem.GetObjectText_
+			oLogging.CreateEntry "Deleting object " & obj1elem.GetObjectText_, LogTypeInfo
+			obj1elem.Delete_
+		Next
+	    oLogging.CreateEntry "Fixed WMI Errors with Windows 2008R2 SP1 Slipstreamed Media", LogTypeInfo
+	End Sub
+	
+    Function Main
+
+	   oLogging.CreateEntry "Applying various fixes depending on the machine's characteristics", LogTypeInfo
+	' Windows 2008R2 SP1 Slipstreamed WMI, http://support.microsoft.com/kb/2545227
+	   If oEnvironment.Item("OSCurrentVersion") = "6.1.7601" Then
+		   FixSlipStreamWMIWin2008R2
+	   End If
+		oLogging.CreateEntry "Finished applying fixes", LogTypeInfo		
+
+    End Function
+
+End Class
+
+   </script>
+</job>

@@ -1,0 +1,110 @@
+
+<job id="MDTXFixMacAddress">
+   <script language="VBScript" src="ZTIUtility.vbs"/>
+      <script language="VBScript" src="ZTINicUtility.vbs"/>
+   <script language="VBScript">
+' // ***************************************************************************
+' // 
+' // File:      $URL: svn://lupvs802/MDTRepo/trunk/MDTShare/Scripts/MDTFixMacAddress.wsf $
+' // 
+' // Version:   $Rev: 155 $
+' // 
+' // Purpose:   changes MAc Address defined as 00:00:00:00:00 to real dynamic ones
+' // 
+' // Usage:     cscript $URL: svn://lupvs802/MDTRepo/trunk/MDTShare/Scripts/MDTFixMacAddress.wsf $[/debug:true]
+' // 
+' // ***************************************************************************
+
+Option Explicit
+RunNewInstance
+
+'//—————————————————————————-
+'//  Global Constants
+'//—————————————————————————-
+
+' Const SOMETHING = 99
+
+'//—————————————————————————-
+'//  Main Class
+'//—————————————————————————-
+
+Class MDTXFixMacAddress
+
+    '//—————————————————————————-
+    '//  Global constant and variable declarations
+    '//—————————————————————————-
+
+    Dim iRetVal
+
+    '//—————————————————————————-
+    '//  Constructor to initialize needed global objects
+    '//—————————————————————————-
+
+    Private Sub Class_Initialize
+
+    End Sub
+    '//—————————————————————————-
+    '//  Main routine
+    '//—————————————————————————-
+
+    Function Main
+
+    Dim arrAvailMacs
+    Dim i
+    Dim j
+    Dim sMac
+    Dim sNewMac
+    
+    
+    If oEnvironment.Item("OSDADAPTERCOUNT")="" Then
+        oLogging.CreateEntry "No Address to set as static in config file", LogTypeInfo
+        
+        Exit Function
+    End If
+    
+    ' Uppercasing all MAC Addresses (not related to the 00000000 trick but necessary when SDX contain lower a,b,c,d,e,f
+    For i = 0 to cint(oEnvironment.Item("OSDADAPTERCOUNT")) - 1
+        sMac = LoadAdapterSetting(i,"MACADDRESS")
+        SaveAdapterSetting i,"MACADDRESS", UCase(sMac)
+    Next 
+    
+    ' Get a copy of live MAC addresses
+    Set arrAvailMacs = oEnvironment.ListItem("MACADDRESS")
+    ' Remove those already manually specified
+    For i = 0 to cint(oEnvironment.Item("OSDADAPTERCOUNT")) - 1
+        sMac = LoadAdapterSetting(i,"MACADDRESS")
+       
+            if arrAvailMacs.Exists(sMac) Then
+                oLogging.CreateEntry sMac & " is already specified by user. Removing it from the list of available MACs", LogTypeInfo
+                arrAvailMacs.Remove sMac
+            End If
+    Next 
+    
+    ' Fix 00:00:00:00:00:00 to remaining addresses
+    For i = 0 to cint(oEnvironment.Item("OSDADAPTERCOUNT")) - 1
+        sMac = LoadAdapterSetting(i,"MACADDRESS")
+        If sMac = "00:00:00:00:00:00" Then
+            oLogging.CreateEntry "Searching free MAC Address for adapter " & i, LogTypeInfo
+    
+            If arrAvailMacs.Count > 0 Then
+                j = arrAvailMacs.Keys
+                sNewMac = j(0)
+                SaveAdapterSetting i,"MACADDRESS", sNewMac
+                oLogging.CreateEntry "Adapter " & i & " has been given MAC Address " & sNewMac, LogTypeInfo                
+                arrAvailMacs.Remove sNewMac
+                
+            Else
+                oLogging.CreateEntry "No MAC Addresses left for adapter " & i, LogTypeInfo
+            End If
+            
+        End If
+    Next 
+    
+    
+
+    End Function
+
+End Class
+
+   </script>
+</job>

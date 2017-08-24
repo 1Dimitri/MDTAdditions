@@ -1,0 +1,88 @@
+
+<job id="MDTXCopyIni">
+   <script language="VBScript" src="ZTIUtility.vbs"/>
+   <script language="VBScript" src="MDTXUtils.vbs"/>
+
+   <script language="VBScript">
+' // ***************************************************************************
+' // 
+' // File:      $URL: svn://lupvs802/MDTRepo/trunk/MDTShare/Scripts/MDTXCopyIni.wsf $
+' // 
+' // Version:   $Rev: 155 $  
+' // 
+' // Purpose:   copy an INI template with substitued values.
+' // 
+' // Usage:     cscript $URL: svn://lupvs802/MDTRepo/trunk/MDTShare/Scripts/MDTXCopyIni.wsf $[/debug:true] /template:Source.ini /target:newfile.ini [/varpath:VarCOntaining path to target]
+' // 
+' // ***************************************************************************
+
+Option Explicit
+RunNewInstance
+
+'//—————————————————————————-
+'//  Main Class
+'//—————————————————————————-
+
+Class MDTXCopyIni
+
+    '//—————————————————————————-
+    '//  Global constant and variable declarations
+    '//—————————————————————————-
+
+    Dim iRetVal
+
+    '//—————————————————————————-
+    '//  Constructor to initialize needed global objects
+    '//—————————————————————————-
+
+    Private Sub Class_Initialize
+
+    End Sub
+    '//—————————————————————————-
+    '//  Main routine
+    '//—————————————————————————-
+
+    Function Main
+
+	Dim sSrc
+	Dim sDest
+	Dim line
+	Dim fdst
+	Dim fsrc
+    Dim fileformat
+    Dim sFileFormat
+    
+   oLogging.CreateEntry "Copying ini file", LogTypeInfo
+   
+	if not oUtility.Arguments.Exists("Template") Then
+		oLogging.CreateEntry "No Template specified", LogTypeError
+		Exit Function
+	Else
+		sSrc = oUtility.Arguments("Template")
+	End If	
+	If not oFso.FileExists(sSrc) Then
+		oLogging.CreateEntry "File " & sSrc & " doesn't exist", LogTypeError
+		Exit Function
+	End If
+	
+	if not oUtility.Arguments.Exists("Target") Then
+		oLogging.CreateEntry "No Target specified", LogTypeError
+		Exit Function
+	Else
+		sDest = oUtility.Arguments("Target")
+	End If
+	
+    oMDTXUtils.CopyIniFile(sSrc,sDest,-1)
+    
+	If oUtility.Arguments.Exists("varpath") Then
+		oEnvironment.Item(oUtility.Arguments("varpath")) = sDest
+	End If
+	
+	Main = SUCCESS
+	
+    End Function
+
+End Class
+
+   </script>
+</job>

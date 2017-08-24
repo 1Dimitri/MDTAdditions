@@ -1,0 +1,123 @@
+
+<job id="MDTXSetPageFile">
+   <script language="VBScript" src="ZTIUtility.vbs"/>
+   <script language="VBScript">
+' // ***************************************************************************
+' // 
+' // File:      $URL: svn://lupvs802/MDTRepo/trunk/MDTShare/Applications/IFDNT%20BladeLogic%20Customization%201.0/SetPageFile.wsf $
+' // 
+' // Version:   $Rev: 155 $
+' // 
+' // Purpose:   Setting page file size 
+' // 
+' // Usage:     cscript $URL: svn://lupvs802/MDTRepo/trunk/MDTShare/Applications/IFDNT%20BladeLogic%20Customization%201.0/SetPageFile.wsf $[/debug:true]
+' // 
+' // ***************************************************************************
+
+Option Explicit
+RunNewInstance
+
+'//—————————————————————————-
+'//  Global Constants
+'//—————————————————————————-
+
+
+
+
+'//—————————————————————————-
+'//  Main Class
+'//—————————————————————————-
+
+Class MDTXSetPageFile
+
+    '//—————————————————————————-
+    '//  Global constant and variable declarations
+    '//—————————————————————————-
+
+    Dim iRetVal
+
+    '//—————————————————————————-
+    '//  Constructor to initialize needed global objects
+    '//—————————————————————————-
+
+    Private Sub Class_Initialize
+
+    End Sub
+    '//—————————————————————————-
+    '//  Main routine
+    '//—————————————————————————-
+
+    Function Main
+
+    
+        Dim objWMIService
+        Dim objSWbemServices
+        Dim colItems
+        Dim objPageFile
+        Dim strNewSize
+        Dim amountRAM
+        Dim sAlgo
+
+        
+        oLogging.CreateEntry "Getting Amount of RAM", LogTypeInfo
+        
+        ' From ZTIGather...
+        ' Cint limits from -32768 to -32767 (PhB)
+        amountRAM = Int(oEnvironment.Item("MEMORY"))
+        
+        oLogging.CreateEntry "Found " & amountRAM & " MB RAM", LogTypeInfo
+        
+        sAlgo = "1.5RAM-CAPPED4095"
+        If oEnvironment.Item("PAGEFILEALGORITHM")<>"" Then
+            sAlgo = UCase(oEnvironment.Item("PAGEFILEALGORITHM"))
+        End If
+        
+        
+        
+        
+        If sAlgo<>"AUTO" THen
+        
+        ' Unset auto see http://support.microsoft.com/kb/974028
+        Set objWMIService = GetObject("winmgmts:{impersonationlevel=impersonate}!root\cimv2")
+            For Each colItems In objWMIService.ExecQuery("SELECT * FROM Win32_ComputerSystem")
+                    On Error Resume Next
+                    colItems.AutomaticManagedPagefile = False
+                    colItems.Put_
+                    Err.Clear
+                    OLogging.CreateEntry "AutomaticManagedPagefile set to false", LogTypeInfo
+            Next        
+
+            oLogging.CreateEntry "Creating PageFileSetting entry", LogTypeInfo
+            Set colItems = objWMIService.ExecQuery("Select * from Win32_PageFileSetting")              
+            If sAlgo = "1.5RAM-CAPPED4095" Then
+                 For Each objPageFile in colItems
+                     strNewSize = Int(1.5 * amountRAM)
+                     If strNewSize>4095 then strNewSize=4095
+                     oLogging.CreateEntry "Fixing PageFile to " & strNewSize, LogTypeInfo
+                     objPageFile.InitialSize = strNewSize
+                     objPageFile.MaximumSize = strNewSize
+                     objPageFile.Put_   
+                Next
+            End If
+			
+			' Exchange 2010
+			' http://technet.microsoft.com/en-us/library/cc431357(v=exchg.80).aspx 
+			' Pagefile = Amount RAM + 10 MB
+			If sAlgo = "EXCHANGE2010" Then
+                 For Each objPageFile in colItems
+                     strNewSize = Int(amountRAM) + 10
+                     oLogging.CreateEntry "Fixing PageFile to " & strNewSize, LogTypeInfo
+                     objPageFile.InitialSize = strNewSize
+                     objPageFile.MaximumSize = strNewSize
+                     objPageFile.Put_   
+                Next
+            End If
+        End If
+        
+        Main = SUCCESS
+    End Function
+
+End Class
+
+   </script>
+</job>

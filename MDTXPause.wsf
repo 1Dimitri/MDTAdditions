@@ -1,0 +1,68 @@
+
+<job id="MDTXTemplate">
+   <script language="VBScript" src="ZTIUtility.vbs"/>
+   <script language="VBScript">
+' // ***************************************************************************
+' // 
+' // File:      $URL: svn://lupvs802/MDTRepo/trunk/MDTShare/Scripts/MDTXPause.wsf $
+' // 
+' // Version:   $Rev: 155 $
+' // 
+' // Purpose:   pause a task for XX seconds (default: 60)
+' // 
+' // Usage:     cscript $URL: svn://lupvs802/MDTRepo/trunk/MDTShare/Scripts/MDTXPause.wsf $[[/seconds:XX] /debug:true]
+' // 
+' // ***************************************************************************
+
+Option Explicit
+RunNewInstance
+
+'//—————————————————————————-
+'//  Global Constants
+'//—————————————————————————-
+
+' Const SOMETHING = 99
+
+'//—————————————————————————-
+'//  Main Class
+'//—————————————————————————-
+
+Class MDTXTemplate
+
+    '//—————————————————————————-
+    '//  Global constant and variable declarations
+    '//—————————————————————————-
+
+    Dim iRetVal
+
+    '//—————————————————————————-
+    '//  Constructor to initialize needed global objects
+    '//—————————————————————————-
+
+    Private Sub Class_Initialize
+
+    End Sub
+    '//—————————————————————————-
+    '//  Main routine
+    '//—————————————————————————-
+
+    Function Main
+
+	Dim  strTime
+	Dim intTime
+	if oUtility.Arguments.Exists("seconds") Then
+		strTime=oUtility.Arguments("seconds")
+	else
+		strTime = "60"  ' Default pause is one minute
+		
+	End If
+	IntTime = strTime * 1000
+	oLogging.CreateEntry "Task Sequence will pause for " & strTime & " seconds",LogTypeInfo
+	wscript.sleep IntTime
+	oLogging.CreateEntry "Resuming Task sequence",LogTypeInfo	
+    End Function
+
+End Class
+
+   </script>
+</job>

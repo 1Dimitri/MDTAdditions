@@ -1,0 +1,164 @@
+
+<job id="MDTXRunVars">
+   <script language="VBScript" src="ZTIUtility.vbs"/>
+   <script language="VBScript" src="ZTIConfigFile.vbs"/>
+   <script language="VBScript">
+' // ***************************************************************************
+' // 
+' // File:      $URL: svn://lupvs802/MDTRepo/trunk/MDTShare/Scripts/MDTXRunVars.wsf $
+' // 
+' // Version:   $Rev: 155 $
+' // 
+' // Purpose:   create variables from the XML Server Description File
+' // 
+' // Usage:     cscript MDTXRunVars.wsf /sdXml:server.sdx /saveas:dummy.xml
+' // 
+' // ***************************************************************************
+
+Option Explicit
+RunNewInstance
+
+'//—————————————————————————-
+'//  Global Constants
+'//—————————————————————————-
+
+' Const SOMETHING = 99
+Const OBJ_XML = "Msxml2.DOMDocument"
+'//—————————————————————————-
+'//  Main Class
+'//—————————————————————————-
+
+Class MDTXRunVars
+
+    '//—————————————————————————-
+    '//  Global constant and variable declarations
+    '//—————————————————————————-
+
+    Dim sdXml
+    Dim oRoles
+    Dim oApps
+    Dim oMDTXApps
+    Dim dApps
+    Dim dRoles
+    Dim dMDTXApps
+    '//—————————————————————————-
+    '//  Constructor to initialize needed global objects
+    '//—————————————————————————-
+
+    Private Sub Class_Initialize
+
+    End Sub
+    
+    ' /// Other Functions
+    Sub AddPerGuid(byref oRef2,dXml2,aGuid)
+        Dim oDependency
+        If dXml.Exists(guid) Then
+            For Each oDependency in oNode.selectNodes("dependency")
+                AddPerGuid oRef2,dXml2, oDependency.nodevalue    
+            Next
+            oLogging.CreateEntry "Adding definition for " & sKind & "=" & guid, LogTypeInfo
+            oRef2.appendChild dXml.Item(guid)
+            'AddPerGuid = True
+        Else
+            oLogging.CreateEntry "Found Reference to " & Guid & " but it doesn't exist as " & sKind, LogTypeError
+            'AddPerGuid = False
+        End If
+    End Sub
+    
+    Sub AddList(oRef,dXml,sKind)
+        Dim sList
+        Dim oNode
+        Dim guid
+        Dim obj
+        sList = sKind & "s"
+        If not IsNull(oRef) Then 
+            Set obj = oRef.SelectNodes("//" & sList & "/" & sKind & "[@guid]")
+            For Each oNode in obj
+                guid = oNode.attributes.getNamedItem("guid").NodeValue
+        '        AddPerGuid oRef,dXml,guid
+            Next
+        End If
+    End Sub
+    '//—————————————————————————-
+    '//  Main routine
+    '//—————————————————————————-
+
+    
+    Function Main
+    
+    Dim doc2Node
+    Dim sArg
+    Dim sShare
+    Dim docRoot
+    '  all xml files we need
+    
+    		sArg = ""
+		
+		if oUtility.Arguments.Exists("share") Then
+			sShare = oUtility.Arguments("share")
+			oUtility.ValidateConnection sShare
+			oUtility.VerifyPathExists sShare
+			If not oFSO.FolderExists(sShare) then
+				oLogging.CreateEntry "An invalid Share value of " & sShare & " was specified.", LogTypeError
+				Exit Function
+			End if
+			sArg = sArg & sShare & "\"
+		End If	
+		
+		if oUtility.Arguments.Exists("folder") Then
+			sArg = sArg & oUtility.Arguments("folder") & "\"
+		End If	
+		
+		if oUtility.Arguments.Exists("file") Then
+			sArg = sArg & oUtility.Arguments("file")
+			oLogging.CreateEntry "Loading " & sArg, LogTypeInfo
+		Else
+			oLogging.CreateEntry "No file argument specified", LogTypeDeprecated
+			Exit Function
+		End If	
+        
+        Set sdXml = CreateObject(OBJ_XML)
+        
+        If oFso.FileExists(sArg) Then
+            sdXml.load oUtility.Arguments(sArg)
+            oLogging.CreateEntry sArg & " loaded", LogTypeInfo
+        Else
+            oLogging.CreateEntry sArg & " not found. Loading Empty XML", LogTypeInfo
+            sdXml.LoadXml "<ServerDescription></ServerDescription>"
+        End If
+        
+        set oApps = new ConfigFile
+        oApps.sFileType = "Applications"
+        set oMDTXApps = new ConfigFile        
+        oMDTXApps.sFileType = "MDTXApps"
+        For Each doc2Node In oMDTXApps.oControlFile.documentElement.childNodes
+            oApps.oControlFile.documentElement.appendChild doc2Node
+        Next       
+        
+        set dMDTXApps = oMDTXApps.FindAllItems
+        set dApps = oApps.FindAllItems
+
+        set oRoles = new ConfigFile
+        oRoles.sFileType = "MDTXRoles"
+        set dRoles = oRoles.FindAllItems
+        
+
+      
+        
+       
+        
+    ' add every role and application to the main xml
+        AddList sdXml.documentElement,dRoles,"role"
+        AddList sdXml.documentElement,dApps,"application"
+        
+    ' save for future use
+        If oUtility.Arguments.Exists("saveas") Then 
+            sdXml.save oUtility.Arguments("saveas")
+        End If
+        
+    End Function
+
+End Class
+
+   </script>
+</job>

@@ -1,0 +1,122 @@
+
+<job id="MDTXAddTattoo">
+   <script language="VBScript" src="ZTIUtility.vbs"/>
+   <script language="VBScript" src="MDTXutils.vbs"/>
+   <script language="VBScript">
+' // ***************************************************************************
+' // 
+' // File:      $URL: svn://lupvs802/MDTRepo/trunk/MDTShare/Scripts/MDTXAddTattoo.wsf $
+' // 
+' // Version:   $Rev: 155 $
+' // 
+' // Purpose:   Add additional tattoing to the current server
+' // 
+' // Usage:     cscript $URL: svn://lupvs802/MDTRepo/trunk/MDTShare/Scripts/MDTXAddTattoo.wsf $[/debug:true]
+' // 
+' // ***************************************************************************
+
+Option Explicit
+RunNewInstance
+
+'//—————————————————————————-
+'//  Global Constants
+'//—————————————————————————-
+
+' Const SOMETHING = 99
+
+'//—————————————————————————-
+'//  Main Class
+'//—————————————————————————-
+
+Class MDTXAddTattoo
+
+    '//—————————————————————————-
+    '//  Global constant and variable declarations
+    '//—————————————————————————-
+
+    Dim iRetVal
+    Dim fSdx
+    Dim fXsl
+    Dim fXslMof
+    Dim sResult
+    Dim sMOFFile
+    Dim sMOFCopy
+    Dim sCmd
+    '//—————————————————————————-
+    '//  Constructor to initialize needed global objects
+    '//—————————————————————————-
+
+    Private Sub Class_Initialize
+
+    End Sub
+    '//—————————————————————————-
+    '//  Main routine
+    '//—————————————————————————-
+
+    Function Main
+
+    '  your code goes here
+
+        iRetVal = Success
+        
+        ' fixed values
+       oLogging.CreateEntry "Creating command file to enter some SMS variables into registry", LogTypeInfo
+
+        sResult = oUtility.LocalRootPath & "\Scripts\MDTXSMS2Reg.cmd"
+        sCmd = "cmd /c " & sResult
+        oLogging.CreateEntry "Running command file: " & sCmd, LogTypeInfo
+        iRetVal = oShell.Run(sCmd, 0, true)
+        oLogging.CreateEntry "cmd result = " & iRetVal, LogTypeInfo
+             
+
+        
+        
+        ' now the MOF Stuff
+        
+        oLogging.CreateEntry "Creating command file to enter variables into registry", LogTypeInfo
+        fSdx = oUtility.LocalRootPath & "\MDTXSources\uuid.sdb"
+        if not oFSO.FileExists(fSdx) Then
+            oLogging.CreateEntry fSdx & " not found", LogTypeError
+        End If
+        'fSdx = oEnv("TEMP") & "\" & oEnvironment.Item("UUID") & ".sdb"
+        iRetVal = oUtility.FindFile("MDTXVars2Reg.xsl", fXsl)
+        if iRetVal <> Success Then
+            oLogging.CreateEntry "Unable to find MDTXVars2Reg.xsl", LogTypeInfo
+        Else    
+        'fXsl = oUtility.LocalRootPath & "\Scripts\MDTXVars2Reg.xsl"
+            sResult = oEnv("TEMP") & "\regvars.cmd"
+        
+            oMDTXUtils.RunXSL2 fSdx,fXsl,sResult
+            sCmd = "cmd /c " & sResult
+            oLogging.CreateEntry "Running command file: " & sCmd, LogTypeInfo
+            iRetVal = oShell.Run(sCmd, 0, true)
+            oLogging.CreateEntry "cmd result = " & iRetVal, LogTypeInfo
+            
+            If iRetVal = Success Then
+                oLogging.CreateEntry "Creating MOF File", LogTypeInfo
+                
+                iRetVal = oUtility.FindFile("MDTXVars2Mof.xsl", fXslMof)
+                'fXslMof = oUtility.LocalRootPath & "\Scripts\MDTXVars2Mof.xsl"
+                 if iRetVal <> Success Then
+                    oLogging.CreateEntry "Unable to find MDTXVars2Mof.xsl", LogTypeInfo
+                Else    
+                    sMOFFile = oEnv("TEMP") & "\uuid.mof"
+                    
+                    oMDTXUtils.RunXSL2 fSdx,fXslMof,sMOFFile
+                    
+                    sMOFCopy = oEnv("WINDIR") & "\SYSTEM32\WBEM\uuid.mof"
+                    oFSO.CopyFile sMOFFile, sMOFCopy, true
+
+            		sCmd = oEnv("WINDIR") & "\SYSTEM32\WBEM\MOFCOMP.EXE -autorecover " & sMOFCopy
+            		oLogging.CreateEntry "Compiling MOF: " & sCmd, LogTypeInfo
+                    iRetVal = oShell.Run(sCmd, 0, true)
+            		oLogging.CreateEntry "MOFCOMP result = " & iRetVal, LogTypeInfo
+                End If
+            End If    
+        End If
+    End Function
+
+End Class
+
+   </script>
+</job>

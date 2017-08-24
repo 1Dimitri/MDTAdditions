@@ -1,0 +1,153 @@
+
+<job id="MDTXConfigureADDS">
+   <script language="VBScript" src="ZTIUtility.vbs"/>
+   <script language="VBScript">
+' // ***************************************************************************
+' // 
+' // File:      $URL: svn://lupvs802/MDTRepo/trunk/MDTShare/Scripts/MDTXConfigureADDS.wsf $
+' // 
+' // Version:   $Rev: 155 $
+' // 
+' // Purpose:   Prepare the run of thew ZTIConfigure by setting passsword and autologon of administrator
+' // 
+' // Usage:     cscript $URL: svn://lupvs802/MDTRepo/trunk/MDTShare/Scripts/MDTXConfigureADDS.wsf $[/debug:true]
+' // 
+' // ***************************************************************************
+
+Option Explicit
+RunNewInstance
+
+'//—————————————————————————-
+'//  Global Constants
+'//—————————————————————————-
+
+' Const SOMETHING = 99
+
+'//—————————————————————————-
+'//  Main Class
+'//—————————————————————————-
+
+Class MDTXConfigureADDS
+
+    '//—————————————————————————-
+    '//  Global constant and variable declarations
+    '//—————————————————————————-
+
+    Dim iRetVal
+
+    '//—————————————————————————-
+    '//  Constructor to initialize needed global objects
+    '//—————————————————————————-
+
+    Private Sub Class_Initialize
+
+    End Sub
+    
+    ' create autologon settings
+    
+    Sub SetPasswordRequired(sAccount)
+    	Dim colUserAccounts
+        Dim oAccount
+        
+        Set colUserAccounts = objWMI.ExecQuery("Select * From Win32_UserAccount where LocalAccount = TRUE")
+        For each oAccount in colUserAccounts
+            If sAccount="" Then
+                If Left(oAccount.SID, 6) = "S-1-5-" and Right(oAccount.SID, 4) = "-500" Then
+                    oAccount.PasswordRequired = True
+                End If
+            Else
+                If oAccount.Name=sAccount Then
+                    oAccount.PasswordRequired = True
+                End If
+            End If    
+        Next
+
+            
+    End Sub
+    
+    Function PopulateAutoAdminLogon2(sAccount,sDomain,sPassword)
+
+		Dim iRetVal, colUserAccounts, oAccount,bAutoAdminLogon,AdminAccount
+        Dim sCmd
+        
+		On Error Resume Next
+		bAutoAdminLogon = oShell.RegRead("HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion\Winlogon\AutoAdminLogon")
+		On Error Goto 0
+		If bAutoAdminLogon = 0 then
+
+            If sAccount="" Then
+			'Determine Local Administrator Account
+                Set colUserAccounts = objWMI.ExecQuery("Select * From Win32_UserAccount where LocalAccount = TRUE")
+                For each oAccount in colUserAccounts
+                    If Left(oAccount.SID, 6) = "S-1-5-" and Right(oAccount.SID, 4) = "-500" Then
+                        AdminAccount = oAccount.Name
+                    End If
+                Next
+                sAccount = AdminAccount
+            End If
+            
+            'oEnvironment.Item("COPYADMIN") = oEnvironment.Item("ADMINPASSWORD")
+            'oEnvironment.Item("ADMINPASSWORD") = sPassword
+            'sCmd=oEnvironment.Item("ToolRoot") & "\AutoLogon.Exe /accepteula " & sAccount & " " & sDomain & " " & sPassword
+            'iRetVal = RunAndLog(sCmd, true)
+			'TestAndLog iRetVal,"Running autologon"
+            
+			iRetval = oShell.RegWrite("HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion\Winlogon\AutoAdminLogon", 1, "REG_SZ")
+			iRetval = oShell.RegWrite("HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion\Winlogon\AutoLogonCount", 999, "REG_SZ")
+			iRetval = oShell.RegWrite("HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion\Winlogon\DefaultUserName", sAccount, "REG_SZ")
+
+			iRetVal = oShell.RegWrite("HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion\Winlogon\DefaultDomainName", sDomain, "REG_SZ")
+
+			iRetval = oShell.RegWrite("HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion\Winlogon\DefaultPassword", sPassword, "REG_SZ")
+			TestAndLog iRetVal, "Updated registry with AutoLogon"
+			
+            wscript.sleep 5000
+
+		Else
+		
+			PopulateAutoAdminLogon2 = Success
+			Exit Function
+			
+		End If
+
+		PopulateAutoAdminLogon2 = Success
+     
+    End Function    
+    '//—————————————————————————-
+    '//  Main routine
+    '//—————————————————————————-
+
+    Function Main
+    Dim iRC 
+
+    If oEnvironment.Item("ReplicaOrNewDomain")="" Then
+        oLogging.CreateEntry "No Active Directory settings found. Exiting...", LogTypeInfo
+        Exit Function
+    End If
+    
+    ' Prepare AutoLogon
+    If oEnvironment.Item("NewDomain")="" Then
+    ' Replica
+        oLogging.CreateEntry "AutoLogon: Using account " & oEnvironment.Item("ADDSUSERNAME") & " in " & oEnvironment.Item("ADDSUSERDOMAIN"), LogTypeInfo
+        if oEnvironment.Item("DEBUG_LOG_SHOWPASSWORDS")<>"" Then
+            oLogging.CreateEntry "with password " & oEnvironment.Item("ADDSPASSWORD"), LogTypeInfo
+        End If
+        iRC = PopulateAutoAdminLogon2(oEnvironment.Item("ADDSUSERNAME"),oEnvironment.Item("ADDSUSERDOMAIN"),oEnvironment.Item("ADDSPASSWORD"))
+    Else
+        oLogging.CreateEntry "AutoLogon: Using account administrator ", LogTypeInfo
+        If oEnvironment.Item("DEBUG_LOG_SHOWPASSWORDS")<>"" Then
+            oLogging.CreateEntry "with password " & oEnvironment.Item("ADMINPASSWORD"), LogTypeInfo
+        End If
+        iRC = PopulateAutoAdminLogon2("",".",oEnvironment.Item("ADMINPASSWORD"))        
+        oLogging.CreateEntry "Adding password required flag", LogTypeInfo
+        SetPasswordRequired ""
+    End If
+    
+       
+
+    End Function
+
+End Class
+
+   </script>
+</job>

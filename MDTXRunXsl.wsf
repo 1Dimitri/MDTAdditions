@@ -1,0 +1,140 @@
+<job id="MDTXRunXsl">
+   <script language="VBScript" src="ZTIUtility.vbs"/>
+   <script language="VBScript" src="MDTXUtils.vbs"/>
+   <script language="VBScript">
+' // ***************************************************************************
+' // 
+' // File:      $URL: svn://lupvs802/MDTRepo/trunk/MDTShare/Scripts/MDTXRunXsl.wsf $
+' // 
+' // Version:   $Rev: 155 $
+' // 
+' // Purpose:   Load Variables from alternate sources than SQL queries: xml file
+' // 
+' // Usage:     cscript $URL: svn://lupvs802/MDTRepo/trunk/MDTShare/Scripts/MDTXRunXsl.wsf $ /file:filetoload.xml [/share:\\server\share] [/folder:SomeFolder] [/debug:true]
+' //            the file will be searched in \\server\share\folder\filetoload.xml
+' // 
+' // ***************************************************************************
+Option Explicit
+RunNewInstance
+
+'//----------------------------------------------------------------------------
+'//  Global Constants
+'//----------------------------------------------------------------------------
+
+'//----------------------------------------------------------------------------
+'//  End declarations
+'//----------------------------------------------------------------------------
+
+
+
+
+'//----------------------------------------------------------------------------
+'//  Main Class
+'//----------------------------------------------------------------------------
+Class MDTXRunXsl
+	'//----------------------------------------------------------------------------
+	'//  Global constant and variable declarations
+	'//----------------------------------------------------------------------------
+
+	Dim iRetVal
+    
+	'  Public Variables
+	' Private variables
+
+	
+	'//----------------------------------------------------------------------------
+	'//  Constructor to initialize needed global objects
+	'//----------------------------------------------------------------------------
+
+	Private Sub Class_Initialize
+	   iRetVal = Success
+	End Sub
+	
+	'//----------------------------------------------------------------------------
+	'//  Main routine
+	'//----------------------------------------------------------------------------
+
+    'Sub RunXSL(sXml,sXsl,sOut)
+
+	'	Dim oXml
+	'	Dim oXsl
+	'	Dim oRes
+	'	Dim sRes
+	'	Set oXml =  oUtility.CreateXMLDOMObjectSafe( sXml )
+	'	Set oXsl =  oUtility.CreateXMLDOMObjectSafe( sXsl )
+	'	Set oRes = CreateObject("MSXML2.DOMDocument")
+    '    oLogging.CreateEntry "Applying XSL " & sXsl & " to " & sXml, LogTypeInfo
+	'	sRes = oXml.transformNode(oXsl)	
+    '    oLogging.CreateEntry sRes, LogTypeInfo
+    '    oRes.LoadXML sRes
+    '    oLogging.CreateEntry "saving into " & sOut, LogTypeInfo
+    '    oRes.save sOut
+        
+		'oRes.loadXml sRes
+		'oRes.save sOut
+	'End Sub
+    
+	Function Main
+	
+		' Local Variables
+	
+		Dim sArg
+        Dim sSaveAs
+        Dim sArg2
+		Dim sShare
+		' Main script processing
+
+		On Error Resume Next
+
+		sArg = ""
+        
+		if oUtility.Arguments.Exists("share") Then
+			sShare = oUtility.Arguments("share")
+			oUtility.ValidateConnection sShare
+			oUtility.VerifyPathExists sShare
+			If not oFSO.FolderExists(sShare) then
+				oLogging.CreateEntry "An invalid Share value of " & sShare & " was specified.", LogTypeError
+				Exit Function
+			End if
+			sArg = sArg & sShare & "\"
+		End If	
+		
+		if oUtility.Arguments.Exists("folder") Then
+			sArg = sArg & oUtility.Arguments("folder") & "\"
+            
+		End If	
+		
+		if oUtility.Arguments.Exists("file") Then
+			sArg = sArg & oUtility.Arguments("file")
+			oLogging.CreateEntry "Loading " & sArg, LogTypeInfo
+		Else
+			oLogging.CreateEntry "No file argument specified", LogTypeDeprecated
+			Exit Function
+		End If	
+
+        if oUtility.Arguments.Exists("stylesheet") Then
+			sArg2 = oUtility.ScriptDir & "\" & oUtility.Arguments("stylesheet")
+			oLogging.CreateEntry "Loading stylesheet " & sArg2, LogTypeInfo
+		Else
+			oLogging.CreateEntry "No stylesheet argument specified", LogTypeDeprecated
+			Exit Function
+		End If	
+        
+        if oUtility.Arguments.Exists("saveas") Then
+			sSaveAs = oUtility.Arguments("saveas")
+			oLogging.CreateEntry "Result will be saved in " & sSaveAs, LogTypeInfo
+		Else
+			oLogging.CreateEntry "No file argument specified for saving file", LogTypeDeprecated
+			Exit Function
+		End If	
+        
+        oMDTXUtils.RunXSL sArg,sArg2,sSaveAs 
+        
+		oLogging.CreateEntry oUtility.ScriptName & " COMPLETED.  Return Value = " & iRetVal, LogTypeInfo
+        
+		Main = iRetVal
+
+	End Function
+End Class
+   </script>
+</job>

@@ -1,0 +1,119 @@
+
+<job id="MDTXInstXML">
+   <script language="VBScript" src="ZTIUtility.vbs"/>
+   <script language="VBScript" src="MDTXUtils.vbs"/>
+   
+   <script language="VBScript">
+' // ***************************************************************************
+' // 
+' // File:      $URL: svn://lupvs802/MDTRepo/trunk/MDTShare/Scripts/MDTXInstXML.wsf $
+' // 
+' // Version:   $Rev: 428 $
+' // 
+' // Purpose:   run a command after applying a XSL transform
+' // 
+' // Usage:     cscript $URL: svn://lupvs802/MDTRepo/trunk/MDTShare/Scripts/MDTXInstXML.wsf $[/debug:true] /command:XXX /template:XXXX /xsl:XXXX
+' // 
+' // ***************************************************************************
+
+Option Explicit
+RunNewInstance
+
+'//—————————————————————————-
+'//  Global Constants
+'//—————————————————————————-
+
+' Const SOMETHING = 99
+
+'//—————————————————————————-
+'//  Main Class
+'//—————————————————————————-
+
+Class MDTXInstXML
+
+    '//—————————————————————————-
+    '//  Global constant and variable declarations
+    '//—————————————————————————-
+
+    Dim iRetVal
+
+    '//—————————————————————————-
+    '//  Constructor to initialize needed global objects
+    '//—————————————————————————-
+
+    Private Sub Class_Initialize
+
+    End Sub
+    '//—————————————————————————-
+    '//  Main routine
+    '//—————————————————————————-
+
+    Function Main
+        Dim sTemplate
+        Dim sCopyTemplate
+        Dim sCopyXsl
+        Dim sXsl
+        Dim oExec
+        Dim sCommand
+        Dim sFile
+        
+        if oUtility.Arguments.Exists("template") Then
+            sTemplate = oFso.GetAbsolutePathName(oUtility.Arguments("template"))
+        Else    
+            oLogging.CreateEntry Utility.ScriptName & ": No template specified", LogTypeError
+            Exit Function
+        End If
+        
+        if oUtility.Arguments.Exists("xsl") Then
+            sXsl = oFso.GetAbsolutePathName(oUtility.Arguments("xsl"))
+        Else    
+            oLogging.CreateEntry oUtility.ScriptName & ": No stylesheet specified", LogTypeError
+            Exit Function
+        End If
+
+         if oUtility.Arguments.Exists("command") Then
+            sCommand = oUtility.Arguments("command")
+        Else    
+            oLogging.CreateEntry oUtility.ScriptName & ": No command specified", LogTypeError
+            Exit Function
+        End If      
+        
+        oLogging.CreateEntry "Copz files into MDTXSources directory... " & sTemplate, LogTypeInfo
+        
+        sCopyTemplate = oUtility.LocalRootPath & "\MDTXSources\" & oFSo.GetBaseName(sTemplate) & "." & oFso.GetExtensionName(sTemplate)
+        sCopyXsl = oUtility.LocalRootPath & "\MDTXSources\" & oFSo.GetBaseName(sXsl) & "." & oFso.GetExtensionName(sXsl)
+        oFso.CopyFile sTemplate, sCopyTemplate, true
+        oFso.CopyFile sXsl, sCopyXsl, true
+        
+        'sFile = oEnv("TEMP") & "\__" &  oFSo.GetBaseName(sTemplate) & ".xml"
+        sFile = oEnv("TEMP") & "\cfg.xml"
+       
+        oMDTXUtils.RunXSL sCopyTemplate, sCopyXsl, sFile
+        'DEBUG
+        'oFso.CopyFile sTemplate, sFile, true
+        'DEBUG
+        
+        oEnvironment.Item("_INPUT") = sFile
+        
+        sCommand = oEnvironment.Substitute(sCommand)
+               
+        oLOgging.CreateEntry "Executing [" & sCommand & "]", LogTypeInfo
+        
+        Set oExec = oShell.Exec(sCommand)
+        Do While oExec.Status = 0
+            WScript.Sleep 3000     
+        Loop
+
+        oLogging.CreateEntry "Exit code = " & oExec.ExitCode, LogTypeInfo
+
+        oEnvironment.Item("_INPUT") = ""
+
+        Main = oExec.ExitCode
+    '  your code goes here
+
+    End Function
+
+End Class
+
+   </script>
+</job>

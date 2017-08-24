@@ -1,0 +1,86 @@
+
+<job id="MDTXCheckXSD">
+   <script language="VBScript" src="ZTIUtility.vbs"/>
+  <script language="VBScript" src="MDTXutils.vbs"/>
+   <script language="VBScript">
+' // ***************************************************************************
+' // 
+' // File:      $URL: svn://lupvs802/MDTRepo/trunk/MDTShare/Scripts/MDTXCheckXSD.wsf $
+' // 
+' // Version:   $Rev: 155 $
+' // 
+' // Purpose:   Check a XML file using a XSD Grammar
+' // 
+' // Usage:     cscript $URL: svn://lupvs802/MDTRepo/trunk/MDTShare/Scripts/MDTXCheckXSD.wsf $[/debug:true] /xml:foo.xml /xsd:bar.xsd
+' // 
+' // ***************************************************************************
+
+Option Explicit
+RunNewInstance
+
+'//—————————————————————————-
+'//  Global Constants
+'//—————————————————————————-
+
+' Const SOMETHING = 99
+
+'//—————————————————————————-
+'//  Main Class
+'//—————————————————————————-
+
+Class MDTXCheckXSD
+
+    '//—————————————————————————-
+    '//  Global constant and variable declarations
+    '//—————————————————————————-
+
+    Dim sRetVal
+
+    '//—————————————————————————-
+    '//  Constructor to initialize needed global objects
+    '//—————————————————————————-
+
+    Private Sub Class_Initialize
+
+    End Sub
+    '//—————————————————————————-
+    '//  Main routine
+    '//—————————————————————————-
+
+    Function Main
+        Dim sXsd
+        Dim sXml
+   
+    	if not oUtility.Arguments.Exists("XSD") Then
+    		oLogging.CreateEntry "No XSD specified", LogTypeError
+    		Exit Function
+    	Else
+    		sXsd = oUtility.Arguments("xsd")
+    	End If	
+
+    	if not oUtility.Arguments.Exists("XML") Then
+    		oLogging.CreateEntry "No XML specified", LogTypeError
+    		Exit Function
+    	Else
+    		sXml = oUtility.Arguments("xml")
+    	End If	
+
+        oLogging.CreateEntry sXml & " being checked using " & sXsd, LogTypeInfo
+            
+        sRetVal = oMDTXUtils.RunXSD(sXml,sXsd)
+        
+        If sRetVal <> "" Then
+            oLogging.CreateEntry sXsd & " didn't validate " & sXml, LogTypeError
+            MAIN = 1
+        Else
+            oLogging.CreateEntry sXml & " passed " & sXsd, LogTypeInfo
+            MAIN = SUCCESS
+        End If
+        
+        
+    End Function
+
+End Class
+
+   </script>
+</job>

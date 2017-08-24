@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<configurationsets>
+  <configurationset id="Default"> 
+    <rules>
+	 <!-- Do not run under Windows PE -->
+      <exclude condition="any">
+        <rule property="OSVersion" operator="equals" value="WinPE" />
+      </exclude>
+    </rules>
+
+    <operations>
+      <registry>
+        <key path="HHKLM:\SOFTWARE\WindowsTeam\ServerInfo\" />
+        <key path="HKLM:\SOFTWARE\WindowsTeam\ServerInfo\InstallationMethod" operation="update" type="REG_SZ">Unattended_2010</key>
+        <key path="HKLM:\SOFTWARE\WindowsTeam\ServerInfo\ServerComment" operation="update" type="REG_SZ">%ServerComment%</key>
+		<key path="HKLM:\SOFTWARE\WindowsTeam\ServerInfo\MainApplicationOwner" operation="update" type="REG_SZ">%ApplicationOwners001%</key>
+		<key path="HKLM:\SOFTWARE\WindowsTeam\ServerInfo\AlternateApplicationOwner" operation="update" type="REG_SZ">%ApplicationOwners002%</key>
+		<key path="HKLM:\SOFTWARE\WindowsTeam\ServerInfo\IsVM" operation="update" type="REG_SZ">%IsVM%</key>
+		<key path="HKLM:\SOFTWARE\WindowsTeam\ServerInfo\VMVCAtInstall" operation="update" type="REG_SZ">%VMVCAtInstall%</key>				
+      </registry>
+    </operations>
+  </configurationset>
+  
+</configurationsets>

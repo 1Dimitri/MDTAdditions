@@ -1,0 +1,93 @@
+
+<job id="MDTXWSUSOffline">
+   <script language="VBScript" src="ZTIUtility.vbs"/>
+   <script language="VBScript">
+' // ***************************************************************************
+' // 
+' // File:      $URL: svn://lupvs802/MDTRepo/trunk/MDTShare/Scripts/MDTXWSUSOffline.wsf $
+' // 
+' // Version:   $Rev: 155 $
+' // 
+' // Purpose:   WSUS patches from the offline ct CD. 
+' //                Coded by Dim from Pierre' s Idea
+' // 
+' // Usage:     cscript $URL: svn://lupvs802/MDTRepo/trunk/MDTShare/Scripts/MDTXWSUSOffline.wsf $[/debug:true]
+' // 
+' // ***************************************************************************
+
+Option Explicit
+RunNewInstance
+
+'//—————————————————————————-
+'//  Global Constants
+'//—————————————————————————-
+
+' Const SOMETHING = 99
+
+'//—————————————————————————-
+'//  Main Class
+'//—————————————————————————-
+
+Class MDTXWSUSOffline
+
+    '//—————————————————————————-
+    '//  Global constant and variable declarations
+    '//—————————————————————————-
+
+    Dim iRetVal
+    Dim sShare
+    Dim sCmd
+    Dim sLetter
+
+    '//—————————————————————————-
+    '//  Constructor to initialize needed global objects
+    '//—————————————————————————-
+
+    Private Sub Class_Initialize
+
+    End Sub
+    '//—————————————————————————-
+    '//  Main routine
+    '//—————————————————————————-
+
+    Function Main
+
+        sShare = oEnvironment.Item("WSUSOFFLINESHARE")
+        If sShare<>"" Then            
+            If oUtility.ValidateConnectionEx(sShare,true) = Success Then
+               sLetter = oUtility.MapNetworkDriveEx(sShare,"","",LogTypeInfo)
+               If sLetter<>"" Then
+                   'sCmd = "cmd /C " & sLetter & "\update.cmd /nobackup /noreboot"
+                   sCmd = sLetter & "\cmd\Doupdate.cmd /nobackup /noreboot"
+                   oLogging.CreateEntry "About to execute command: " & sCmd, LogTypeInfo
+                   oShell.CurrentDirectory = sLetter & "\cmd"
+                   iRetval = oShell.Run(sCmd,1,true)
+                   oLogging.CreateEntry "Return Code " & iRetVal, LogTypeInfo
+                   'TO DO: if code 3010 3011 new pass
+                   	If iRetVal = 3011 then  ' Reboot requested
+                        ' Set properties to indicate a reboot is needed and this script should be re-executed
+                        oEnvironment.Item("SMSTSRebootRequested") = "true"
+                        oEnvironment.Item("SMSTSRetryRequested") = "true"
+                    oLogging.CreateEntry "Exiting to initiate a reboot with retry (to pick up where we left off)", LogTypeInfo
+                    ElseIf iRetVal = 3010 Then
+                        ' Set properties to indicate a reboot is needed but no re-execution
+                        oEnvironment.Item("SMSTSRebootRequested") = "true"
+                        oEnvironment.Item("SMSTSRetryRequested") = "false"                    
+                        oLogging.CreateEntry "Exiting to initiate a reboot to finalize installation", LogTypeInfo
+                    End If 
+               Else
+                   oLogging.CreateEntry "Unable to map a letter for " & sShare & ". WSUS Offline Installation with UNC Path only is not supported.", LogTypeWarning
+               End If
+            Else
+                oLogging.CreateEntry "Unable to connect to " & sShare & ". No patching started", LogTypeInfo
+            End If
+        Else
+            oLogging.CreateEntry "WSUSOfflineShare property is not defined. Nothing to do.", LogTypeInfo
+        End If    
+
+    End Function
+
+End Class
+
+   </script>
+</job>

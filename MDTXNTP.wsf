@@ -1,0 +1,75 @@
+
+<job id="MDTXNTP">
+   <script language="VBScript" src="ZTIUtility.vbs"/>
+   <script language="VBScript">
+' // ***************************************************************************
+' // 
+' // File:      $URL: svn://lupvs802/MDTRepo/trunk/MDTShare/Scripts/MDTXNTP.wsf $
+' // 
+' // Version:   $Rev: 155 $
+' // 
+' // Purpose:   
+' // 
+' // Usage:     cscript $URL: svn://lupvs802/MDTRepo/trunk/MDTShare/Scripts/MDTXNTP.wsf $[/debug:true]
+' // 
+' // ***************************************************************************
+
+Option Explicit
+RunNewInstance
+
+'//—————————————————————————-
+'//  Global Constants
+'//—————————————————————————-
+
+' Const SOMETHING = 99
+
+'//—————————————————————————-
+'//  Main Class
+'//—————————————————————————-
+
+Class MDTXNTP
+
+    '//—————————————————————————-
+    '//  Global constant and variable declarations
+    '//—————————————————————————-
+
+    Dim iRetVal
+
+    '//—————————————————————————-
+    '//  Constructor to initialize needed global objects
+    '//—————————————————————————-
+
+    Private Sub Class_Initialize
+
+    End Sub
+    '//—————————————————————————-
+    '//  Main routine
+    '//—————————————————————————-
+
+    Function Main
+
+        Dim sCmd
+        Dim NTPServers
+    
+        oLogging.CreateEntry "-- Taking care of NTP Servers --", LogTypeInfo
+        NTPServers = oEnvironment.Item("NTPServers")
+        If NTPServers <> "" Then    
+            oLogging.CreateEntry "NTP Servers: " & NTPServers, LogTypeInfo
+        ' AD Logic
+            If ((UCase(oEnvironment.Item("NewDomain"))<>"FOREST") and (UCase(oEnvironment.Item("JoinWorkgroup"))="")) Then
+                oLogging.CreateEntry "You have manually set a NTPServers List, but you are not building a new forest or a computer in a workgroup. Please check if it's correct",LogTypeWarning 
+            End If
+            sCmd =  "w32tm /config /manualpeerlist:" & NTPServers & " /syncfromflags:manual /reliable:yes /update"
+            iRetVal = oShell.Run(sCmd)
+            TestAndLog iRetVal, "Ran " & sCmd
+        Else
+            oLogging.CreateEntry "No NTPServers variable defined. Nothing to do", LogTypeInfo
+            iRetVal = Success
+        End If
+
+    End Function
+
+End Class
+
+   </script>
+</job>

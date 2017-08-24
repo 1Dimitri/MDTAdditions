@@ -1,0 +1,115 @@
+<job id="MDTXLoadVars">
+   <script language="VBScript" src="ZTIUtility.vbs"/>
+   <script language="VBScript" src="MDTXUtils.vbs"/>
+   <script language="VBScript">
+' // ***************************************************************************
+' // 
+' // File:      $URL: svn://lupvs802/MDTRepo/trunk/MDTShare/Scripts/MDTXLoadVars.wsf $
+' // 
+' // Version:   $Rev: 155 $
+' // 
+' // Purpose:   Load Variables from alternate sources than SQL queries: xml file
+' // 
+' // Usage:     cscript $URL: svn://lupvs802/MDTRepo/trunk/MDTShare/Scripts/MDTXLoadVars.wsf $ /file:filetoload.xml [/share:\\server\share] [/folder:SomeFolder] [/debug:true]
+' //            the file will be searched in \\server\share\folder\filetoload.xml
+' // 
+' // ***************************************************************************
+Option Explicit
+RunNewInstance
+
+'//----------------------------------------------------------------------------
+'//  Global Constants
+'//----------------------------------------------------------------------------
+
+'//----------------------------------------------------------------------------
+'//  End declarations
+'//----------------------------------------------------------------------------
+
+
+
+
+'//----------------------------------------------------------------------------
+'//  Main Class
+'//----------------------------------------------------------------------------
+Class MDTXLoadVars
+	'//----------------------------------------------------------------------------
+	'//  Global constant and variable declarations
+	'//----------------------------------------------------------------------------
+
+	Dim iRetVal
+    
+	'  Public Variables
+	' Private variables
+
+	
+	'//----------------------------------------------------------------------------
+	'//  Constructor to initialize needed global objects
+	'//----------------------------------------------------------------------------
+
+	Private Sub Class_Initialize
+	   iRetVal = Success
+	End Sub
+	
+	'//----------------------------------------------------------------------------
+	'//  Main routine
+	'//----------------------------------------------------------------------------
+
+	Function Main
+	
+		' Local Variables
+	
+		Dim oNode 
+		Dim sVar
+		Dim sValue
+		Dim sArg
+		Dim oVarList
+		Dim sShare
+		' Main script processing
+
+		On Error Resume Next
+
+		sArg = ""
+		
+		if oUtility.Arguments.Exists("share") Then
+			sShare = oUtility.Arguments("share")
+			oUtility.ValidateConnection sShare
+			oUtility.VerifyPathExists sShare
+			If not oFSO.FolderExists(sShare) then
+				oLogging.CreateEntry "An invalid Share value of " & sShare & " was specified.", LogTypeError
+				Exit Function
+			End if
+			sArg = sArg & sShare & "\"
+		End If	
+		
+		if oUtility.Arguments.Exists("folder") Then
+			sArg = sArg & oUtility.Arguments("folder") & "\"
+		End If	
+		
+		if oUtility.Arguments.Exists("file") Then
+			sArg = sArg & oUtility.Arguments("file")
+			oLogging.CreateEntry "Loading " & sArg, LogTypeInfo
+		Else
+			oLogging.CreateEntry "No file argument specified", LogTypeDeprecated
+			Exit Function
+		End If	
+		'set oVarList = oUtility.CreateXMLDOMObjectSafe(sArg)
+				'If oVarList = nothing Then
+				'	oLogging.CreateEntry "Unable to find a valid XML file", LogTypeInfo
+				'End If 
+		'For each oNode in oVarList.selectNodes("//var")
+		'	sVar = oNode.GetAttribute("name")
+		'	sValue = oNode.Text
+		'	oLogging.CreateEntry "Found " & sVar & "=" & sValue, LogTypeInfo
+		'	oEnvironment.Item(sVar)= sValue		
+		'Next
+        oMDTXUtils.LoadVarsFromXmlFile(sArg)
+		
+		' All done		
+		' End
+		oLogging.CreateEntry oUtility.ScriptName & " COMPLETED.  Return Value = " & iRetVal, LogTypeInfo
+		Main = iRetVal
+
+	End Function
+End Class
+   </script>
+</job>

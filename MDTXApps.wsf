@@ -1,0 +1,499 @@
+<job id="MDTXApps">
+	<script language="VBScript" src="ZTIUtility.vbs"/>
+	<script language="VBScript" src="ZTIConfigFile.vbs"/>
+	<script language="VBScript">
+
+' // ***************************************************************************
+' // 
+' // Copyright (c) Microsoft Corporation.  All rights reserved.
+' // 
+' // Microsoft Deployment Toolkit Solution Accelerator
+' //
+' // File:      $URL: svn://lupvs802/MDTRepo/trunk/MDTShare/Scripts/MDTXApps.wsf $
+' // 
+' // Version:   $Rev: 314 $
+' // 
+' // Purpose:   Performs additional installations tasks based on MDTXApps.Xml
+' // 				1- PunchFirewall: Open Firewall for inbound connections
+' //
+' // Usage:     cscript.exe [//nologo] MDTXApps.wsf [/debug:true]
+' // 
+' // ***************************************************************************
+
+Option Explicit
+RunNewInstance
+
+	Const NET_FW_IP_PROTOCOL_TCP = 6
+	Const NET_FW_IP_PROTOCOL_UDP = 17
+    Const NET_FW_IP_PROTOCOL_ICMPv4 = 1
+    Const NET_FW_IP_PROTOCOL_ICMPv6 = 58   
+    
+	Const NET_FW_ACTION_ALLOW = 1
+	Const NET_FW_ACTION_BLOCK = 0
+    
+	Const NET_FW_RULE_DIR_IN = 1
+    Const NET_FW_RULE_DIR_OUT = 2
+    
+    Const NET_FW_PROFILE2_DOMAIN = 1
+    Const NET_FW_PROFILE2_PRIVATE = 2
+    Const NET_FW_PROFILE2_PUBLIC = 4
+
+    
+'//----------------------------------------------------------------------------
+'//  Main Class
+'//----------------------------------------------------------------------------
+
+Class MDTXApps
+
+	'//----------------------------------------------------------------------------
+	'//  Class instance variable declarations
+	'//----------------------------------------------------------------------------
+
+	Dim oApplications
+	Dim oXMLApps
+	Dim dAvailableApps
+	Dim RulesObject
+	Dim CurrentProfiles
+
+	'//----------------------------------------------------------------------------
+	'//  Constructor to initialize needed global objects
+	'//----------------------------------------------------------------------------
+
+	Private Sub Class_Initialize
+		Dim fwPolicy2
+		
+    	Set fwPolicy2 = CreateObject("HNetCfg.FwPolicy2")
+	    CurrentProfiles = fwPolicy2.CurrentProfileTypes
+	    Set RulesObject = fwPolicy2.Rules
+
+		
+	End Sub
+	
+	
+	'//----------------------------------------------------------------------------
+	'//  Main routine
+	'//----------------------------------------------------------------------------
+
+	Function Main
+	
+		Dim iRetVal, sGuid
+		Dim iApplicationCount, iPercent
+		Dim sApplicationType
+		Dim bFirewall
+		Dim bCheckVars
+		Dim sApplications
+
+		iRetVal = Success
+
+		' Validate that are not restarting from a failed install.
+
+		If ucase(oEnv("SystemDrive")) = "X:" Then
+			oLogging.CreateEntry "# This seems a failed install. Please start from beginning", LogTypeError
+			Main = Failure
+			Exit Function
+		End if
+
+		' Prepare the Deployment Root Directory
+
+		If oEnvironment.Item("ResourceRoot") = "" then
+			oEnvironment.Item("ResourceRoot") = oFSO.GetParentFolderName(oUtility.ScriptDir)
+		End if
+		
+		If oUtility.Arguments.Exists("firewall") Then
+			bFirewall = True
+			oLogging.CreateEntry "About to add firewall inbound exceptions", LogTypeInfo
+		Else
+			bFirewall = False
+		End If
+
+		If oUtility.Arguments.Exists("checkvars") Then
+			bCheckVars = True
+			oLogging.CreateEntry "About to check variables for applications", LogTypeInfo
+		Else
+			bCheckVars = False
+		End If
+
+		' Load the XML File
+		set oXMLApps = new ConfigFile
+		oXMLApps.sFileType = "MDTXApps"
+		set dAvailableApps = oXMLApps.FindAllItems
+
+
+		' Check that an individual application guid wasn't passed via the commmand line.
+		' This is a mandatory single install intiate by a Task Sequence action.
+
+		If oEnvironment.Item("ApplicationGUID") <> "" Then
+			oLogging.CreateEntry "Single Application On command-line indicated. Guid: " & oEnvironment.Item("ApplicationGUID"), LogTypeInfo
+
+			oLogging.CreateEntry "################", LogTypeInfo
+			oLogging.CreateEntry "Entry: " & oEnvironment.Item("ApplicationGUID"), LogTypeInfo
+			oLogging.CreateEntry "################", LogTypeInfo
+
+			' do all process we need to perform on an single application
+			If bFirewall Then
+				iRetVal = PunchFirewall(oEnvironment.Item("ApplicationGUID"), 0)
+			End If
+			
+			If bCheckVars Then
+				iRetVal = CheckVars(oEnvironment.Item("ApplicationGUID"), 0)
+			End If
+			
+			Main = 0   ' Always succeed.  The errors and warnings from above will be reported so the process can continue.
+			Exit Function
+		End If
+		
+		sApplications =""
+		If bFirewall Then
+			sApplications = "InstalledApplications," + sApplications
+		End If
+		
+		If bCheckVars Then
+			sApplications = "MandatoryApplications,Applications," + sApplications
+		End If
+		' Load the list of Applications stored in the enviroment. First we being by processing the MandatoryApplication
+		' and then follow with the normal user selected Applications.
+
+		For Each sApplicationType in Split(sApplications,",")
+			oLogging.CreateEntry "Processing Application Type: [" & sApplicationType & "]", LogTypeInfo
+
+			Set oApplications = oEnvironment.ListItem(sApplicationType)
+
+			If oApplications.Count = 0 then
+				oLogging.CreateEntry "No " & sApplicationType & ", exiting MDTXApps.wsf", LogTypeInfo
+				Main = Success
+			Else
+
+				' Process the list
+
+				oLogging.CreateEntry "Ready to perform additional applications task: " , LogTypeInfo
+				iApplicationCount = 0
+				For each sGuid in oApplications
+					oLogging.CreateEntry "Entry: " & sGuid, LogTypeInfo
+					oLogging.CreateEntry "################", LogTypeInfo
+					iApplicationCount = iApplicationCount + 1
+					iPercent = CLng(iApplicationCount / oApplications.Count * 100)
+					If oUtility.Arguments.Exists("firewall") Then
+						iRetVal = PunchFirewall(sGuid, iPercent)
+					End If	
+					If oUtility.Arguments.Exists("checkvars") Then
+						iRetVal = CheckVars(sGuid, iPercent)
+					End If	
+				Next
+
+			End if
+
+		Next
+
+		Main = iRetVal
+
+	End Function
+	
+	' CHeck if variables are present
+	Function CheckVars(sGuid, iPercent)
+		' TODO: Get Attributes and perform checks
+		' Find the entry in the XML document
+		Dim oNode
+		Dim oVar
+		Dim sName
+		Dim sVarType
+		Dim oListVar
+		Dim bOk
+		Dim oValidator
+		Dim sValidName
+		Dim sClass
+		Dim oneVar
+		
+		If not dAvailableApps.Exists(sGuid) then
+			oLogging.CreateEntry "MDTXApps, application GUID " & sGuid & " not found in application list, unable to execute checkvars", LogTypeInfo
+			Exit Function
+		Else
+			set oNode = dAvailableApps.Item(sGuid)
+		End if
+
+		
+'    <variables>
+'	<var name="NBMASTER" type="sequence">
+' <validator friendlyname="digitsonly" class="regex">[\d]+</validator>
+'	</var>
+'   </variables>
+
+		For each oVar in oNode.SelectNodes("variables")
+
+			sName = oVar.attributes.getNamedItem("name").nodeValue
+			oLogging.CreateEntry " Testing " & sName, LogTypeInfo
+			sVarType = oVar.attributes.getNamedItem("type").nodeValue
+			If sVarType="sequence" then
+					Set oListVar = ListItem(sName)
+			Else
+					Set oListVar = CreateObject("Scripting.Dictionary")
+					oListVar.Add oEnvironment.Item(sName)
+			end if
+
+			bOk = True
+			
+			For each oValidator in oVar
+				sValidName = oValidator.attributes.getNamedItem("friendlyname").nodeValue
+				sClass = oValidator.attributes.getNamedItem("class").nodeValue
+				For each oneVar in oListVar
+					If sClass = "required" Then
+						If oneVar = "" Then
+							bOk = False
+						End If
+					ElseIf sClass = "regex" Then
+						If not oRegEx.TestRegEx(oValidator.Text,oneVar) Then
+							bOk = False
+						End If
+					Else
+						bOk = false						
+					End If	
+					If not bOk Then
+						oLogging.Entry sValidName & " did not accept value: " & oneVar, LogTypeError
+						Exit For
+					End If
+				Next
+			Next
+		Next
+		
+	End Function
+	
+    Function ReplaceNull(sStr,sDef)
+      WScript.Echo TypeName(sStr) 
+      Select Case TypeName(sStr)
+      Case "Nothing"
+      	ReplaceNull = sDef
+      Case "Empty"
+      	ReplaceNull = sDef
+      Case "IXMLDOMAttribute"
+      	ReplaceNull = sStr.NodeValue
+      Case Else	
+        ReplaceNull = sStr
+      End Select      
+    End Function
+    
+	' Perform firewall in-bound connection punching
+	Function PunchFirewall(sGuid, iPercent)
+
+		Dim oNode
+		Dim oPort
+		Dim iResult
+		Dim sName
+        Dim sDescription
+		Dim sProtocol
+		Dim sLocalPorts
+        Dim sLocalAddresses
+        Dim sRemoteAddresses
+        Dim sRemotePorts
+        Dim sApplicationName       
+		Dim sServiceName
+        Dim sIcmpTypeAndCodes
+		Dim sGroupName
+        Dim sDirection
+		Dim NewRule
+        Dim sGrouping
+        Dim sEdgeTransversal
+        Dim sEnabled
+        Dim sAction
+		Dim sProfiles
+		Dim aProfiles
+		Dim i
+		Dim x
+        Dim oFWProfiles
+        Dim oFWProfile
+		
+
+		PunchFirewall = Success
+
+		' Check if application has already been installed
+		' If not oInstalledApplications.Exists(sGuid) then
+		 '	oLogging.CreateEntry "Application " & sGuid & "  has not been installed correctly, will not potentially compromise security by punching firewall for non-existent app", LogTypeInfo
+		'	Exit Function
+		' End if
+
+		oLogging.CreateEntry "About to create firewall rules...", LogTypeInfo
+		' Find the entry in the XML document
+
+		If not dAvailableApps.Exists(sGuid) then
+			oLogging.CreateEntry "application " & sGuid & " not found in extended application list, no firewall rule created", LogTypeInfo
+			Exit Function
+		Else
+			set oNode = dAvailableApps.Item(sGuid)
+		End if
+
+		
+'    <firewall>
+'      <portgroup>Sysload
+'	<port name="Sysload Collector" protocol="TCP" number="9501" service="sldrmd.exe" /><port name="Sysload FileServer" protocol="TCP" number="9502" service="sldfsd.exe" /></portgroup>
+' --> changed as rule
+'   </firewall>
+
+		For each oPort in oNode.SelectNodes("firewall/portgroup/rule")
+		' <port ... />
+        
+			sName = ReplaceNull(oPort.attributes.getNamedItem("name"),"NoName")
+            
+            sDescription = ReplaceNull(oPort.attributes.getNamedItem("description"),"No Description given")    
+			sProtocol = ReplaceNull(oPort.attributes.getNamedItem("protocol"),"TCP")            
+			sLocalPorts = ReplaceNull(oPort.attributes.getNamedItem("localports"),"*")
+            sLocalAddresses = ReplaceNull(oPort.attributes.getNamedItem("localaddresses"),"*")
+            sRemoteAddresses = ReplaceNull(oPort.attributes.getNamedItem("remoteaddresses"),"*")
+            sRemotePorts = ReplaceNull(oPort.attributes.getNamedItem("remoteports"),"*")
+            sApplicationName = ReplaceNull(oPort.attributes.getNamedItem("application"),"")
+			sServiceName = ReplaceNull(oPort.attributes.getNamedItem("service"),"")
+            sIcmpTypeAndCodes = ReplaceNull(oPort.attributes.getNamedItem("ICMPtypecode"),"128:*")
+            sDirection = ReplaceNull(oPort.attributes.getNamedItem("direction"),"In")
+            sEnabled = ReplaceNull(oPort.attributes.getNamedItem("enabled"),"true")
+            sEdgeTransversal = ReplaceNull(oPort.attributes.getNamedItem("edgetraversal"),"false")
+            sAction = ReplaceNull(oPort.attributes.getNamedItem("action"),"allow")
+			sProfiles = ReplaceNull(oPort.attributes.getNamedItem("profiles"),"")
+			
+            sGrouping = ReplaceNull(oPort.attributes.getNamedItem("grouping"),"@firewallapi.dll,-23255")
+			sGroupName = oPort.ParentNode.text	 
+			oLogging.CreateEntry "Group ["& sGroupName &"] " & sName & " will be added.",LogTypeInfo
+		
+		
+			Set NewRule = CreateObject("HNetCfg.FWRule")
+			NewRule.Name = sName & "-" & sDirection
+
+            Select Case UCase(sProtocol)
+            Case "TCP"
+                NewRule.Protocol = NET_FW_IP_PROTOCOL_TCP
+            Case "UDP"
+                NewRule.Protocol = NET_FW_IP_PROTOCOL_UDP
+            Case "ICMPV4"
+                NewRule.Protocol = NET_FW_IP_PROTOCOL_ICMPv4
+                NewRule.IcmpTypesAndCodes = sIcmpTypeAndCodes
+            Case "ICMPV6"    
+                NewRule.Protocol = NET_FW_IP_PROTOCOL_ICMPv6
+                NewRule.IcmpTypesAndCodes = sIcmpTypeAndCodes
+            Case Else
+                oLogging.CreateEntry "Unknown Protocol for firewall rule " & sName & ":" & sProtocol, LogTypeError
+            End Select
+           
+            Select Case lcase(sAction)
+            Case "allow"
+                NewRule.Action = NET_FW_ACTION_ALLOW
+            Case "block"
+                NewRule.Action = NET_FW_ACTION_BLOCK
+            Case Else
+                oLogging.CreateEntry "Unknown action  for firewall rule " & sName & ":" & sAction, LogTypeError
+            End Select
+            
+            Select Case lcase(sDirection)
+            Case "in"
+                NewRule.Direction = NET_FW_RULE_DIR_IN
+            Case "out"
+                NewRule.Direction = NET_FW_RULE_DIR_OUT
+            Case Else
+                oLogging.CreateEntry "Unknown direction for firewall rule " & sName & ":" & sDirection, LogTypeError
+            End Select
+	        
+            NewRule.EdgeTraversal = sEdgeTransversal
+			NewRule.LocalPorts = sLocalPorts
+            NewRule.RemotePorts = sRemotePorts
+            NewRule.LocalAddresses = sLocalAddresses
+            NewRule.RemoteAddresses = sRemoteAddresses
+            if sServiceName <> "" Then
+                NewRule.ServiceName = sServiceName
+            End If
+            If sApplicationName <> "" Then
+                NewRule.ApplicationName = sApplicationName
+            End If
+            NewRule.Description = sDescription
+			NewRule.Grouping = sGrouping
+            
+            ' Change profiles (Multiple profiles are Win2008R2 & W7 only)
+            
+            set oFWProfiles = oEnvironment.ListItem("FIREWALLUPDATEPROFILES")
+			'If oFWProfiles.Count = 0 Then
+            If (oFWProfiles.Count = 0) and (sProfiles="") Then
+                NewRule.Profiles = CurrentProfiles
+                '  If asked to join a domain, add the domain profile to avoid the rules being added to public only depending the stage we're at
+                If oEnvironment.Item("JOINDOMAIN")<>"" Then
+                   NewRule.Profiles = NET_FW_PROFILE2_DOMAIN 
+                   oLogging.CreateEntry "No FIREWALLUPDATEPROFILES found, Domain Specified, so adding Domain myself to the rule " & sName, LogTypeInfo
+                End If
+                oLogging.CreateEntry "Current profiles added to " & sName, LogTypeInfo
+                
+            Else
+                 NewRule.Profiles = 0
+				 If oFWProfiles.Count <> 0 Then
+				 oLogging.CreateEntry "Adding profiles depending on the FirewallUpdateProfiles", LogTypeInfo
+                For Each oFWProfile in oFWProfiles
+                    Select Case UCase(oFWProfile)
+                    Case "CURRENT"
+                        NewRule.Profiles = NewRule.Profiles or CurrentProfiles
+                        oLogging.CreateEntry "Current profiles added to  " & sName, LogTypeInfo
+                    Case "DOMAIN"
+                        NewRule.Profiles = NewRule.Profiles or NET_FW_PROFILE2_DOMAIN 
+                        oLogging.CreateEntry "Domain profile added to  " & sName, LogTypeInfo
+                    Case "PRIVATE"
+                        NewRule.Profiles = NewRule.Profiles or NET_FW_PROFILE2_PRIVATE
+                        oLogging.CreateEntry "Private profile added to  " & sName, LogTypeInfo
+                    Case "PUBLIC"    
+                        NewRule.Profiles = NewRule.Profiles or NET_FW_PROFILE2_PUBLIC
+                        oLogging.CreateEntry "Public profile added to  " & sName, LogTypeInfo
+                    Case "ALL"    
+                        NewRule.Profiles = NewRule.Profiles or NET_FW_PROFILE2_PUBLIC or NET_FW_PROFILE2_PRIVATE or NET_FW_PROFILE2_DOMAIN
+                        oLogging.CreateEntry "all profiles added to  " & sName, LogTypeInfo                        
+                    Case Else
+                        oLogging.CreateEntry "Unknown profile " & oFWProfile & " for firewall rule " & sName,  LogTypeError
+                    End Select                   
+                Next 
+				Else
+					oLogging.CreateEntry "No FirewallUpdateProfiles contents", LogTypeInfo
+				End If
+			' DJ: Per App Rule
+        
+
+				If sProfiles<>"" Then
+					oLogging.CreateEntry "Adding profiles depending on the per-rule profiles attribute", LogTypeInfo
+					aProfiles = split(sProfiles,",")
+					x = UBound(aProfiles) - LBound(aProfiles)
+					oLogging.CreateEntry x & " rules to go", LogTypeInfo
+					
+			        For i =  LBound(aProfiles) to UBound(aProfiles)
+                    Select Case UCase(aProfiles(i))
+                     Case "CURRENT"
+                         NewRule.Profiles = NewRule.Profiles or CurrentProfiles
+                         oLogging.CreateEntry "Current profiles added to  " & sName, LogTypeInfo
+                    Case "DOMAIN"
+                        NewRule.Profiles = NewRule.Profiles or NET_FW_PROFILE2_DOMAIN 
+                        oLogging.CreateEntry "Domain profile added to  " & sName, LogTypeInfo
+                    Case "PRIVATE"
+                        NewRule.Profiles = NewRule.Profiles or NET_FW_PROFILE2_PRIVATE
+                        oLogging.CreateEntry "Private profile added to  " & sName, LogTypeInfo
+                    Case "PUBLIC"    
+                        NewRule.Profiles = NewRule.Profiles or NET_FW_PROFILE2_PUBLIC
+                        oLogging.CreateEntry "Public profile added to  " & sName, LogTypeInfo
+                    Case "ALL"    
+                        NewRule.Profiles = NewRule.Profiles or NET_FW_PROFILE2_PUBLIC or NET_FW_PROFILE2_PRIVATE or NET_FW_PROFILE2_DOMAIN
+                        oLogging.CreateEntry "all profiles added to  " & sName, LogTypeInfo                        
+                    Case Else
+                        oLogging.CreateEntry "Unknown profile " & aProfiles(i) & " for firewall rule " & sName,  LogTypeError
+                   End Select                   
+                Next 
+				End If
+            End If                    
+			
+            oLogging.CreateEntry "Profile bitMask:  " & NewRule.Profiles, LogTypeInfo
+			If lcase(sEnabled)="true" Then            
+                NewRule.Enabled = True
+            Else
+                NewRule.Enabled = False
+            End If    
+
+		
+			oLogging.CreateEntry "Adding newly created rule...", LogTypeInfo
+			RulesObject.Add NewRule
+
+		Next
+
+	End Function
+	
+
+End class
+
+
+	</script>
+</job>
+

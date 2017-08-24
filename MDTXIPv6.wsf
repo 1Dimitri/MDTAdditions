@@ -1,0 +1,95 @@
+
+<job id="MDTXIPv6">
+   <script language="VBScript" src="ZTIUtility.vbs"/>
+   <script language="VBScript">
+' // ***************************************************************************
+' // 
+' // File:      $URL: svn://lupvs802/MDTRepo/trunk/MDTShare/Scripts/MDTXIPv6.wsf $
+' // 
+' // Version:   $Rev: 155 $
+' // 
+' // Purpose:   enable or disable IPv6 stack
+' //                should be used in STATE RESTORE or later phase
+' // Usage:     cscript $URL: svn://lupvs802/MDTRepo/trunk/MDTShare/Scripts/MDTXIPv6.wsf $[/debug:true]
+' // 
+' // ***************************************************************************
+
+Option Explicit
+RunNewInstance
+
+'//—————————————————————————-
+'//  Global Constants
+'//—————————————————————————-
+
+' Const SOMETHING = 99
+
+'//—————————————————————————-
+'//  Main Class
+'//—————————————————————————-
+
+Class MDTXIPv6
+
+    '//—————————————————————————-
+    '//  Global constant and variable declarations
+    '//—————————————————————————-
+
+
+
+    '//—————————————————————————-
+    '//  Constructor to initialize needed global objects
+    '//—————————————————————————-
+
+    Private Sub Class_Initialize
+
+    End Sub
+    '//—————————————————————————-
+    '//  Main routine
+    '//—————————————————————————-
+
+    Function Main
+    
+    Dim iRetVal
+    Dim bDisableAll
+    Dim bDisaBlePrefix
+    Dim bDisableNative
+    Dim bDisableTunnel
+    DIm bDisableInterface
+    Dim bEnableAll
+    Dim iValue
+    
+
+        oLogging.CreateEntry "-- Setting IPv6 stack --", LogTypeInfo
+        bEnableAll = UCase(oEnvironment.Item("IPV6"))="ENABLEALL" or UCase(oUtility.Arguments.Item("IPV6"))="ENABLEALL"
+        bDisableAll = UCase(oEnvironment.Item("IPV6"))="DISABLEALL" or UCase(oUtility.Arguments.Item("IPV6"))="DISABLEALL"
+        bDisablePrefix=UCase(oEnvironment.Item("IPV6"))="DISABLEPREFIX" or UCase(oUtility.Arguments.Item("IPV6"))="DISABLEPREFIX"
+        bDisableNative=UCase(oEnvironment.Item("IPV6"))="DISABLENATIVE" or UCase(oUtility.Arguments.Item("IPV6"))="DISABLENATIVE"
+        bDisableTunnel=UCase(oEnvironment.Item("IPV6"))="DISABLETUNNEL" or UCase(oUtility.Arguments.Item("IPV6"))="DISABLETUNNEL"
+        bDisableInterface=UCase(oEnvironment.Item("IPV6"))="DISABLEINTERFACE" or UCase(oUtility.Arguments.Item("IPV6"))="DISABLEINTERFACE"
+        If oEnvironment.Item("IPV6")="" And not oUtility.Arguments.Exists("IPV6") Then
+            bDisableAll = True
+        End If
+        If bDisableAll Then
+            iValue = &H0ffffffff
+        ElseIf bDisablePrefix Then
+            iValue = &H0020
+        ElseIf bDisableNative Then
+            iValue = &H0010
+        ElseIf bDisableTunnel Then
+            iValue = &H0001
+        ElseIf bDisableInterface Then
+            iValue = &H0011   
+        ElseIf bEnableAll Then
+            iValue = &H0
+        End If
+        
+    oLogging.CreateEntry "Chosen value: " & iValue, LogTypeInfo
+    iRetVal = oShell.RegWrite("HKLM\SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters\DisabledComponents",  iValue, "REG_DWORD")
+    TestAndLog iRetVal, "RegWrite RC"
+        
+
+    End Function
+
+End Class
+
+   </script>
+</job>

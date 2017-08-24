@@ -1,0 +1,206 @@
+
+<job id="MDTXInferVars">
+   <script language="VBScript" src="ZTIUtility.vbs"/>
+   	<script language="VBScript" src="ZTIConfigFile.vbs"/>
+   <script language="VBScript">
+' // ***************************************************************************
+' // 
+' // File:      $URL: svn://lupvs802/MDTRepo/trunk/MDTShare/Scripts/MDTXInferVars.wsf $
+' // 
+' // Version:   $Rev: 155 $
+' // 
+' // Purpose:   create new variables from already existing ones
+' //                takes care of the Applications files.
+' // Usage:     cscript $URL: svn://lupvs802/MDTRepo/trunk/MDTShare/Scripts/MDTXInferVars.wsf $[/debug:true]
+' // 
+' // ***************************************************************************
+
+Option Explicit
+RunNewInstance
+
+'//—————————————————————————-
+'//  Global Constants
+'//—————————————————————————-
+
+' Const SOMETHING = 99
+
+'//—————————————————————————-
+'//  Main Class
+'//—————————————————————————-
+
+Class MDTXInferVars
+
+    '//—————————————————————————-
+    '//  Global constant and variable declarations
+    '//—————————————————————————-
+	Dim oXMLApps
+	Dim oXMLRoles
+	Dim dAvailableApps
+	Dim oAppsList
+
+    '//—————————————————————————-
+    '//  Constructor to initialize needed global objects
+    '//—————————————————————————-
+
+    Private Sub Class_Initialize
+
+    End Sub
+	
+	Function IsEqual(var,value)
+		If var=value Then
+		  IsEqual = True
+		Else
+		  IsEqual = False
+		End If
+		
+	End Function 
+
+	Function IsNumber(var,value)
+		If isnumeric(var)=true then
+			IsNumber = True
+		Else
+			IsNumber = False
+		End If
+	End Function
+	
+	
+	Function MatchRegEx(var,value)
+	   If oRegEx.TestRegEx(var,value) Then
+	     MatchRegEx = True
+		Else
+		 MatchRegEx = False
+	   End If
+	   
+	End Function
+	
+	
+	Function TestAgainst(aVar,anOperator,aValue)
+		Select Case anOperator 
+		Case "regex"
+			oLogging.CreateEntry "Does " & aVar & " match " & aValue, LogTypeInfo		   
+			TestAgainst = MatchRegex(aVar,aValue)
+		case "isnumber"
+			oLogging.CreateEntry "Does " & aVar & " contain a number: " & aValue, LogTypeInfo
+		    TestAgainst = IsNumber(aVar,aValue)
+		Case Else  ' anOperator="equals"
+			oLogging.CreateEntry "Is " & aVar & " equal to " & aValue, LogTypeInfo		   
+			TestAgainst = IsEqual(aVar,aValue)
+		End Select
+		
+	End Function
+	
+	Function UpdateVarsFromRole(aNode)
+		Dim oVar
+		Dim oAttribute
+		Dim sVar
+		Dim sOperator
+		Dim sValue
+		Dim sVarValue
+		Dim dic
+		Dim oItem
+		
+		For Each oVar in aNode.SelectNodes("./*[not(Name)]")
+		   sVar = oVar.nodeName
+		   sValue = oVar.Text
+  		   oLogging.CreateEntry "Processing tag " & sVar & " with value " & sValue, LogTypeInfo
+
+    	sOperator = ""
+		For Each oAttribute in oVar.attributes
+            sVarValue = oEnvironment.Item(sVar)
+			if oAttribute.Name = "append" Then
+					sOperator = oAttribute.nodeValue
+                ElseIf oAttribute.Name = "replace" Then
+                    sOperator = "replace"                    
+                    sVarValue = ""
+			End If	
+                
+		   Next
+		   
+		   If sOperator<>"" Then
+		        If sVarValue <> "" Then
+					oEnvironment.Item(sVar)= sValue & sOperator & sVarValue
+				Else
+					oEnvironment.Item(sVar) = sValue
+				End If	
+			Else
+				Set dic = oEnvironment.ListItem(sVar)
+				dic.Add oItem, sVar & Right("000" & CStr(dic.Count+1), 3)				
+				oEnvironment.ListItem(sVar) = dic
+			End If	
+		   
+		Next
+
+		UpdateVarsFromRole = SUCCESS
+
+	End Function	
+	
+	Function IsToBeIncluded(aNode)
+		Dim oVar
+		Dim sVar
+		Dim sValue
+
+' <Conditions>
+'<OnVmWare><!CDATA[[oEnvironment.Item("VMPLATFORM")="VMware"]]></OnVmWare>
+'<MacAddress>00:00:00:00:00:00</MacAddress>
+'</IncludedIn>		
+' 
+
+        IsToBeIncluded = False
+		
+		For Each oVar in aNode.SelectNodes("Conditions/*")
+		   sVar = oVar.nodeName
+		   sValue = oVar.Text
+           If Eval(sValue) Then
+                oLogging.CreateEntry sVar & " evaluated to be true, also skipping others", LogTypeInfo
+                IsToBeIncluded = True
+                Exit Function
+           Else
+                oLogging.CreateEntry sVar & " evaluated to be false", LogTypeInfo
+           End If
+		Next
+	End Function
+	
+
+    '//—————————————————————————-
+    '//  Main routine
+    '//—————————————————————————-
+
+    Function Main
+
+		Dim sGuid
+		Dim sName
+		Dim oNode
+		Dim dGuid
+		Dim oItem
+		
+		' Load the XML File
+		oLogging.CreateEntry "## Adding Applications when criteria match", LogTypeInfo
+		
+		set oXMLApps = new ConfigFile
+		oXMLApps.sFileType = "MDTXApps"
+		set dAvailableApps = oXMLApps.FindAllItems
+		dGuid = dAvailableApps.Keys
+		set oAppsList = oEnvironment.ListItem("Applications")
+		For Each sGuid in dGuid
+			oLogging.CreateEntry "Analyzing Application " & sGuid, LogTypeInfo
+			set oNode = dAvailableApps.Item(sGuid)
+			If IsToBeIncluded(oNode) Then	
+				'oAppsList.Add "Applications" & Right("000" & CStr(oAppsList.Count+1), 3), sGuid
+				oAppsList.Add sGuid, "Applications" & Right("000" & CStr(oAppsList.Count+1), 3)
+				oLogging.CreateEntry sGuid & " added to the Applications list", LogTypeInfo
+			Else
+				oLogging.CreateEntry sGuid & " did not match criteria", LogTypeInfo
+			End If
+		Next
+		oEnvironment.ListItem("Applications") = oAppsList			
+
+		
+
+		Main = SUCCESS
+
+    End Function
+
+End Class
+
+   </script>
+</job>

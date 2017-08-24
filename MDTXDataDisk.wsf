@@ -1,0 +1,184 @@
+
+<job id="MDTXDataDisk">
+   <script language="VBScript" src="ZTIUtility.vbs"/>
+   <script language="VBScript">
+' // ***************************************************************************
+' // 
+' // File:      $URL: svn://lupvs802/MDTRepo/trunk/MDTShare/Scripts/MDTXDataDisk.wsf $
+' // 
+' // Version:   $Rev: 295 $
+' // 
+' // Purpose:   create partition and format disks other than system/boot
+' // 
+' // Usage:     cscript $URL: svn://lupvs802/MDTRepo/trunk/MDTShare/Scripts/MDTXDataDisk.wsf $[/debug:true]
+' // 
+' // ***************************************************************************
+
+Option Explicit
+RunNewInstance
+
+'//—————————————————————————-
+'//  Global Constants
+'//—————————————————————————-
+
+' Const SOMETHING = 99
+
+'//—————————————————————————-
+'//  Main Class
+'//—————————————————————————-
+
+Class MDTXDataDisk
+
+    '//—————————————————————————-
+    '//  Global constant and variable declarations
+    '//—————————————————————————-
+
+    Dim iRetVal
+    Dim oDiskPart
+    
+    '//—————————————————————————-
+    '//  Constructor to initialize needed global objects
+    '//—————————————————————————-
+
+    Private Sub Class_Initialize
+        set oDiskPart = oShell.Exec("Diskpart.exe")
+    End Sub
+    
+    '//—————————————————————————-
+    '//  other functions
+    '//—————————————————————————-
+	Function PipeToDiskPart( sCommand )
+		oLogging.CreateEntry  "DiskPart command: [" & sCommand & "]", LogTypeInfo
+		oDiskPart.stdIn.WriteLine sCommand
+	End Function
+    
+    Function GetValue( iDisk, sValue, sDef )
+        Dim sV
+
+		sV = oEnvironment.Item( "DATADISK" & iDisk & sValue )
+		If sV = "" then
+			sV = sDef
+		End If
+        GetValue = sV
+	End Function
+    
+    '//—————————————————————————-
+    '//  Remove the letter associated to the BDE Drive
+    '//—————————————————————————-
+    
+    Function RemoveBDEDriveLetter
+    Dim bFound
+    Dim sLine
+    Dim oDrive
+    
+        bFound = False
+		sLine = "SELECT * FROM Win32_Volume WHERE Label = 'BDEDrive'" 
+		oLogging.CreateEntry "Searching for BDEDrive", LogTypeInfo
+        
+		For Each oDrive in objWMI.ExecQUery( sLine )
+			oLogging.CreateEntry "Found matching BDEDrive Volume " & oDrive.Path_ , LogTypeInfo
+            oDrive.Dismount True, True  ' even there are open files, and do not remount at next startup
+			bFound = true
+			Exit For
+		Next
+        
+       RemoveBDEDriveLetter = Success
+    End Function
+    '//—————————————————————————-
+    '//  Main routine
+    '//—————————————————————————-
+
+    Function Main
+        Dim iDisks
+        Dim i
+        Dim sPartType
+        Dim sPartStyle
+        Dim sConvert
+        Dim sSize
+        Dim sUnits
+        Dim sVolumeName
+        Dim sFileSystem
+        Dim sQuickFormat
+        Dim sAllocSize
+        Dim sFormat
+        Dim sFS
+        dim sLetter
+        dim sLine
+        dim sIndex
+        
+    '  your code goes here
+        iRetVal = RemoveBDEDriveLetter
+        
+    ' do the data disk stuff
+        If oEnvironment.Item("DATADISKCOUNT")="" Then
+            oLogging.CreateEntry "No DATADISKCOUNT variable found, nothing to do", LogTypeInfo            
+            Exit Function
+        End If
+        If not isnumeric(oEnvironment.Item("DATADISKCOUNT")) Then
+            oLogging.CreateEntry "DATADISKCOUNT is not a number: " & oEnvironment.Item("DATADISKCOUNT"), LogTypeError
+        End If
+        iDisks = cint(oEnvironment.Item("DATADISKCOUNT"))
+        
+        ' avoid race conditions with plug and play
+        PipeToDiskPart "automount disable"
+        For i=0 to iDisks-1
+            sIndex = GetValue(i,"INDEX","")
+            If not isnumeric(sIndex) Then
+                oLogging.CreateEntry "INDEX " & i & " is not a number: " & sIndex, LogTypeError
+            End If
+            sPartStyle = GetValue(i,"PARTITIONSTYLE","MBR")
+            sPartType = GetValue(i,"PARTITIONTYPE","PRIMARY")
+            sConvert = GetValue(i,"DISKTYPE","BASIC")
+            sFS = GetValue(i,"FILESYSTEM","NTFS")
+            'sSize = GetValue(i,"SIZE","100")
+            'sUnits = GetValue(i,"SIZEUNITS","PERCENT")
+            sVolumeName = GetValue(i,"VOLUMENAME","Data" & i)
+            sQuickFormat = GetValue(i,"QUICKFORMAT","YES")
+            sAllocSize= GetValue(i,"ALLOCATIONUNITSIZE","")
+            sLetter = GetValue(i,"LETTER","")
+            PipeToDiskPart "select disk " & sIndex
+            PipeToDiskPart "clean"
+			PipeToDiskPart "CONVERT " & sConvert
+			PipeToDiskPart "CONVERT " & sPartStyle
+            PipeToDiskPart "create partition " & sPartType
+            If sLetter<>"" Then
+                PipeToDiskPart "assign letter=" & sLetter
+            Else
+                PipeToDiskPart "assign"
+            End If
+            sFormat = "Format"
+            sFormat = sFormat & " FS=" & sFS & " LABEL=" & sVolumeName
+            if UCase(sQuickFormat)="YES" Then
+                sFormat = sFormat & " QUICK" 
+            End If            
+            if sAllocSize<>"" Then
+                sFormat = sFormat & " UNIT=" & sAllocSize
+            End If            
+            PipeToDiskPart sFormat
+        Next
+        ' Restore default setting        
+        PipeToDiskPart "automount enable"
+        
+        PipeToDiskPart "exit"
+        
+        do while oDiskPart.Status = 0 or not oDiskPart.StdOut.atEndOfStream
+			If not oDiskPart.StdOut.atEndOfStream then
+					sLine = oDiskPart.StdOut.ReadLine
+					oLogging.CreateEntry "Diskpart responded on output stream [" & sLine & "]", LogTypeInfo
+			End If
+			If not oDiskPart.StdErr.atEndOfStream then
+				sLine = oDiskPart.StdErr.ReadLine
+				oLogging.CreateEntry "Diskpart responded on error stream [" & sLine & "]", LogTypeInfo
+			End If
+		loop
+
+		TestAndLog oDiskPart.ExitCode, "DiskPart error code"
+
+            
+        
+    End Function
+
+End Class
+
+   </script>
+</job>

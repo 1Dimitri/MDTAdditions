@@ -1,0 +1,110 @@
+<job id="MDTXCopySDX">
+	<script language="VBScript" src="ZTIUtility.vbs"/>
+	<script language="VBScript">
+
+' // ***************************************************************************
+' // 
+' // Copyright (c) Microsoft Corporation.  All rights reserved.
+' // 
+' // Microsoft Deployment Toolkit Solution Accelerator
+' //
+' // File:      LTICopyScripts.wsf
+' // 
+' // Version:   5.0.1641.0
+' // 
+' // Purpose:   Copy the LTI/ZTI scripts to the local drive.
+' // 
+' // Usage:     cscript.exe [//nologo] LTICopyScripts.wsf [/debug:true]
+' // 
+' // ***************************************************************************
+
+Option Explicit
+RunNewInstance
+
+
+'//----------------------------------------------------------------------------
+'//  Main Class
+'//----------------------------------------------------------------------------
+
+Class MDTXCopySDX
+
+	'//----------------------------------------------------------------------------
+	'//  Class instance variable declarations
+	'//----------------------------------------------------------------------------
+
+	Public ScriptsToCopy
+	Public SourcePath
+	Public TargetPath
+	
+
+	'//----------------------------------------------------------------------------
+	'//  Constructor to initialize needed global objects
+	'//----------------------------------------------------------------------------
+
+	Private Sub Class_Initialize
+
+		' Create a list of scripts to copy.
+		
+			
+		ScriptsToCopy = Array(oEnvironment.Item("UUID") & ".sda", _
+        oEnvironment.Item("UUID") & ".sdb", _
+        oEnvironment.Item("UUID") & ".sdv", _
+        "wizard.sda", _
+        "wizard.sdb", _
+        "wizard.sdv" )
+            
+		SourcePath = oEnv("TEMP") & "\"	
+		TargetPath = oUtility.LocalRootPath & "\MDTXSources\"
+						
+
+	End Sub
+	
+	
+	'//----------------------------------------------------------------------------
+	'//  Main routine
+	'//----------------------------------------------------------------------------
+
+	Function Main
+	
+		Dim sTarget
+		Dim sSource
+		Dim sFile
+		
+		oLogging.CreateEntry "--------- Script Start ---------", LogTypeInfo		
+	
+		oUtility.VerifyPathExists TargetPath
+
+		For each sFile in ScriptsToCopy
+
+			sTarget = TargetPath & "uuid." & oFSO.GetExtensionName(sFile)
+			sSource = SourcePath & sFile
+
+			If oFSO.FileExists(sTarget) then
+
+				oLogging.CreateEntry "File " & sTarget & " already exists in Target", LogTypeInfo
+
+			ElseIf not oFSO.FileExists(sSource) then
+
+				oLogging.CreateEntry "File " & sSource & " does not exist in Source.", LogTypeInfo
+
+			Else
+
+				oFSO.CopyFile sSource, sTarget, true
+				TestAndLog SUCCESS, "Copy " & sSource & " to " & sTarget
+
+			End if
+		Next
+        
+
+
+		Main = SUCCESS
+
+	End Function
+
+
+End class
+
+
+	</script>
+</job>
+

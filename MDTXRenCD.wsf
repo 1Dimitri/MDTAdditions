@@ -1,0 +1,88 @@
+
+<job id="MDTXRenCD">
+   <script language="VBScript" src="ZTIUtility.vbs"/>
+   <script language="VBScript">
+' // ***************************************************************************
+' // 
+' // File:      $URL: svn://lupvs802/MDTRepo/trunk/MDTShare/Scripts/MDTXRenCD.wsf $
+' // 
+' // Version:   $Rev: 516 $
+' // 
+' // Purpose:   rename last CD ROM to letter (default value R:)
+' // 
+' // Usage:     cscript $URL: svn://lupvs802/MDTRepo/trunk/MDTShare/Scripts/MDTXRenCD.wsf $[/debug:true] [/letter:J:]
+' // 
+' // ***************************************************************************
+
+Option Explicit
+RunNewInstance
+
+'//—————————————————————————-
+'//  Global Constants
+'//—————————————————————————-
+
+' Const SOMETHING = 99
+
+'//—————————————————————————-
+'//  Main Class
+'//—————————————————————————-
+
+Class MDTXRenCD
+
+    '//—————————————————————————-
+    '//  Global constant and variable declarations
+    '//—————————————————————————-
+
+    Dim iRetVal
+    
+    Dim sLetter
+    '//—————————————————————————-
+    '//  Constructor to initialize needed global objects
+    '//—————————————————————————-
+
+    Private Sub Class_Initialize
+        sLetter = "R:"
+    End Sub
+    '//—————————————————————————-
+    '//  Main routine
+    '//—————————————————————————-
+
+    Function Main
+        Dim strComputer
+        Dim objWMIService
+        Dim colItems
+        Dim objItem
+        Dim scurrentDrive
+
+    '  your code goes here
+
+    if oEnvironment.Item("CDLetter")<>"" Then
+	sLetter=oEnvironment.Item("CDLetter")
+    end if
+    if oUtility.Arguments.Exists("letter") Then
+        sLetter=oUtility.Arguments("letter")
+    end if
+    
+    strComputer = "."
+    Set objWMIService = GetObject("winmgmts:\\" & strComputer & "\root\cimv2")
+    Set colItems = objWMIService.ExecQuery("Select * from Win32_CDROMDrive")
+    For Each objItem in colItems
+        scurrentDrive = objItem.Drive
+        oLogging.CreateEntry "CD Found: " & objItem.Name & ", letter: " & objItem.Drive, LogTypeInfo
+    Next
+    
+    Set colItems = objWMIService.ExecQuery("Select * from Win32_Volume Where Name = '" & scurrentDrive & "\\'")
+    For Each objItem in colItems
+        oLogging.CreateEntry "Changing " & objItem.DriveLetter & " to " & sLetter, LogTypeInfo
+        objItem.DriveLetter = sLetter
+        objItem.Put_
+    Next
+
+    Main = SUCCESS
+    
+    End Function
+
+End Class
+
+   </script>
+</job>

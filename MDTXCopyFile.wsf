@@ -1,0 +1,97 @@
+
+<job id="MDTXCopyFile">
+   <script language="VBScript" src="ZTIUtility.vbs"/>
+   <script language="VBScript">
+' // ***************************************************************************
+' // 
+' // File:      $URL: svn://lupvs802/MDTRepo/trunk/MDTShare/Scripts/MDTXCopyFile.wsf $
+' // 
+' // Version:   $Rev: 155 $
+' // 
+' // Purpose:   Copy a file to a folder on the log share
+' // 
+' // Usage:     cscript $URL: svn://lupvs802/MDTRepo/trunk/MDTShare/Scripts/MDTXCopyFile.wsf $ /source:path\file /target:file [/folder:path] [/share:ShareName] [/debug:true]
+' // 
+' // ***************************************************************************
+
+Option Explicit
+RunNewInstance
+
+'//—————————————————————————-
+'//  Global Constants
+'//—————————————————————————-
+
+' Const SOMETHING = 99
+
+'//—————————————————————————-
+'//  Main Class
+'//—————————————————————————-
+
+Class MDTXCopyFile
+
+    '//—————————————————————————-
+    '//  Global constant and variable declarations
+    '//—————————————————————————-
+
+
+    '//—————————————————————————-
+    '//  Constructor to initialize needed global objects
+    '//—————————————————————————-
+
+    Private Sub Class_Initialize
+
+    End Sub
+    '//—————————————————————————-
+    '//  Main routine
+    '//—————————————————————————-
+
+    Function Main
+	Dim sNewLogFolderName
+	Dim sShare
+	
+    '  your code goes here
+	'TODO: REview for MEDIA scenario
+		If oUtility.Arguments.Exists("share") Then
+			sShare = oEnvironment.Item(oUtility.Arguments("share"))
+		Else
+			sShare = oEnvironment.Item("SLShare")
+		End If
+
+		If not oUtility.Arguments.Exists("source") Then
+			oLogging.CreateEntry "Unable to copy file to the network as no source parameter was specified.", LogTypeError
+			Exit Function				
+		End If
+
+		If not oUtility.Arguments.Exists("target") Then
+			oLogging.CreateEntry "Unable to copy file to the network as no target parameter was specified.", LogTypeError
+			Exit Function				
+		End If
+		
+		'Check the network log share is there and writeable
+		If sShare = "" then
+			oLogging.CreateEntry "Unable to copy log to the network as no SLShare value was specified.", LogTypeError
+			Exit Function			
+		End if
+		oUtility.ValidateConnection sShare
+		oUtility.VerifyPathExists sShare
+		If not oFSO.FolderExists(sShare) then
+			oLogging.CreateEntry "An invalid SLShare value of " & oEnvironment.Item("SLShare") & " was specified.", LogTypeError
+			Exit Function
+		End if
+		
+		If oUtility.Arguments.Exists("folder") Then
+			sNewLogFolderName = sShare & "\" & oUtility.Arguments("folder")
+		Else
+			sNewLogFolderName = sShare & "\" & oEnvironment.Item("TaskSequenceID")		
+		End If
+		oUtility.VerifyPathExists sNewLogFolderName
+
+		oFileHandling.CopyFile oUtility.Arguments("source") ,  sNewLogFolderName & "\" & oUtility.Arguments("target"), True
+		
+		Main = Success
+    End Function
+
+End Class
+
+   </script>
+</job>

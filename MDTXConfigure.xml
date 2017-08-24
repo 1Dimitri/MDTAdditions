@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<mappings>
+	<mapping id="DisallowRDP" type="xml">
+		<remove><![CDATA[//settings[@pass="specialize"]/component[@name="Microsoft-Windows-TerminalServices-LocalSessionManager"]/fDenyTSConnections]]></remove>
+	</mapping>
+<!--	<mapping id="SNMPLocation" type="xml">	
+		<xpath><![CDATA[//settings[@pass="specialize"]/component[@name="Microsoft-Windows-SNMP-Agent-Service"]/RFC1156Agent/sysLocation]]></xpath>
+	</mapping>
+		<mapping id="SNMPContact" type="xml">
+		<xpath><![CDATA[//settings[@pass="specialize"]/component[@name="Microsoft-Windows-SNMP-Agent-Service"]/RFC1156Agent/sysContact]]></xpath>
+	</mapping>
+		<mapping id="SNMPServices" type="xml">
+		<xpath><![CDATA[//settings[@pass="specialize"]/component[@name="Microsoft-Windows-SNMP-Agent-Service"]/RFC1156Agent/sysServices]]></xpath>
+	</mapping>  
+	<mapping id="DNSSuffixSearchOrder" type="xml">
+		<xpath key="/DomainName"><![CDATA[//settings[@pass="specialize"]/component[@name="Microsoft-Windows-DNS-Client"]/DNSSuffixSearchOrder]]></xpath>
+	</mapping> -->
+</mappings>

@@ -1,0 +1,88 @@
+
+<job id="MDTXPlayIss">
+   <script language="VBScript" src="ZTIUtility.vbs"/>
+   <script language="VBScript" src="MDTXUtils.vbs"/>
+
+   <script language="VBScript">
+' // ***************************************************************************
+' // 
+' // File:      $URL: svn://lupvs802/MDTRepo/trunk/MDTShare/Scripts/MDTXplayIss.wsf $
+' // 
+' // Version:   $Rev: 155 $  
+' // 
+' // Purpose:   copy a Installshield silent template and run the appropriate setup command.
+' // 
+' // Usage:     cscript $URL: svn://lupvs802/MDTRepo/trunk/MDTShare/Scripts/MDTXplayIss.wsf $[/debug:true] /iss:issfilename [/exe:Setup.exe]
+' // 
+' // ***************************************************************************
+
+Option Explicit
+RunNewInstance
+
+'//—————————————————————————-
+'//  Main Class
+'//—————————————————————————-
+
+Class MDTXPlayIss
+
+    '//—————————————————————————-
+    '//  Global constant and variable declarations
+    '//—————————————————————————-
+
+    Dim iRetVal
+
+    '//—————————————————————————-
+    '//  Constructor to initialize needed global objects
+    '//—————————————————————————-
+
+    Private Sub Class_Initialize
+
+    End Sub
+    '//—————————————————————————-
+    '//  Main routine
+    '//—————————————————————————-
+
+    Function Main
+
+	Dim sSrc
+	Dim sDest
+    Dim sSetup
+    Dim oExec
+    
+   oLogging.CreateEntry "Copying ini file", LogTypeInfo
+   
+	if not oUtility.Arguments.Exists("iss") Then
+		oLogging.CreateEntry "No iss file specified", LogTypeError
+		Exit Function
+	Else
+		sSrc = oUtility.Arguments("iss")
+	End If	
+	if oUtility.Arguments.Exists("exe") Then
+		sSetup = oUtility.Arguments("exe")		
+	Else
+		sSetup = "setup.exe"
+	End If	
+
+    sDest = oEnv("TEMP") & "\" & oFso.GetBaseName( sSrc ) & "." & oFso.GetExtensionName( sSrc )
+    sSetup = sSetup & " -s -f1" & sDest
+	
+	
+    oMDTXUtils.CopyIniFile sSrc, sDest, 0
+    
+    oLogging.CreateEntry "Executing [" & sSetup & "]", LogTypeInfo
+    
+    Set oExec = oShell.Exec(sSetup)
+
+    Do While oExec.Status = 0
+        WScript.Sleep 3000     
+    Loop
+
+	
+	Main = oExec.ExitCode
+	
+    End Function
+
+End Class
+
+   </script>
+</job>

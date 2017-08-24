@@ -1,0 +1,124 @@
+
+<job id="MDTXSNMP">
+   <script language="VBScript" src="ZTIUtility.vbs"/>
+   <script language="VBScript" src="MDTXUtils.vbs"/>
+   <script language="VBScript">
+' // ***************************************************************************
+' // 
+' // File:      $URL: svn://lupvs802/MDTRepo/trunk/MDTShare/Scripts/MDTXSNMP.wsf $
+' // 
+' // Version:   $Rev: 155 $
+' // 
+' // Purpose:   
+' // 
+' // Usage:     cscript $URL: svn://lupvs802/MDTRepo/trunk/MDTShare/Scripts/MDTXSNMP.wsf $[/debug:true]
+' // 
+' // ***************************************************************************
+
+Option Explicit
+RunNewInstance
+
+'//—————————————————————————-
+'//  Global Constants
+'//—————————————————————————-
+
+' Const SOMETHING = 99
+
+'//—————————————————————————-
+'//  Main Class
+'//—————————————————————————-
+
+Class MDTXSNMP
+
+    '//—————————————————————————-
+    '//  Global constant and variable declarations
+    '//—————————————————————————-
+
+    Dim iRetVal
+
+    '//—————————————————————————-
+    '//  Constructor to initialize needed global objects
+    '//—————————————————————————-
+
+    Private Sub Class_Initialize
+
+    End Sub
+    '//—————————————————————————-
+    '//  Main routine
+    '//—————————————————————————-
+
+    Function Main
+		Dim sKey 
+		Dim i
+		Dim v
+		Dim a
+		Dim j
+    '  your code goes here
+		
+		If Not oMDTXUtils.ServiceExists("SNMP") Then
+			oLogging.CreateEntry "SNMP Service is not installed. Nothing to do", LogTypeInfo
+			Exit Function
+		End If	
+		
+		sKey = "HKLM\System\CurrentControlSet\Services\SNMP\Parameters\"
+		
+        oLogging.CreateEntry "Writing Location and Contact", LogTypeInfo
+        For Each v in Array("sysContact","sysLocation")
+        If oEnvironment.Item("SNMP" & v) <> "" Then
+            oShell.RegWrite  sKey & "RFC1156Agent\" & v, oEnvironment.Item("SNMP" & v), "REG_SZ"
+        End If    
+        Next
+		
+		oLogging.CreateEntry "Writing SNMP Permitted Managers", LogTypeInfo
+		i = 1				
+		For Each v in oEnvironment.ListItem("SNMPPermittedManagers")
+			oShell.RegWrite  sKey & "PermittedManagers\" & i, v, "REG_SZ"
+			i = i + 1
+		Next
+
+		oLogging.CreateEntry "Writing SNMP Trap Configuration ", LogTypeInfo
+		For Each v in oEnvironment.ListItem("SNMPTrapHostsPerCommunity")
+			a = Split(v,",")
+			oLogging.CreateEntry "Writing " & sKey & "TrapConfiguration\" & a(0) & " key", LogTypeInfo
+
+			For j = 1 to UBound(a)
+				oLogging.CreateEntry  "Writing " & sKey & "TrapConfiguration\" & a(0) & ":" & j & "=REG_SZ:" & a(j), LogTypeInfo
+				oShell.RegWrite  sKey & "TrapConfiguration\" & a(0) & "\" & j , a(j), "REG_SZ"
+				
+			Next
+		Next
+
+		oLogging.CreateEntry "Writing Community Security settings ", LogTypeInfo
+			
+		For Each v in oEnvironment.ListItem("SNMPCommunityRights")
+			a = Split(v,",")
+			If UBound(a) = 1 Then
+				j = 0
+				Select Case Lcase(a(1))
+					Case "readonly" 
+						j = &H04
+					Case "readwrite" 
+						j = &H08
+					Case "notify" 
+						j = &H02
+					Case "readcreate" 
+						j = &H10
+					Case "none" 
+						j = &H01
+				End Select
+				If j<>0 Then
+					oLogging.CreateEntry "Writing " & sKey & "ValidCommunities\" & a(0) & "=DWORD: " & j, LogTypeInfo
+					oShell.RegWrite  sKey & "ValidCommunities\" & a(0), j, "REG_DWORD"
+				End If
+			End If
+
+		Next
+		
+		oMDTXUtils.RestartService("SNMP")
+		
+    End Function
+
+End Class
+
+   </script>
+</job>

@@ -1,0 +1,123 @@
+<job id="MDTXDumpVars">
+   <script language="VBScript" src="ZTIUtility.vbs" />
+   	<script language="VBScript" src="ZTIConfigFile.vbs"/>  ' for ConfigFile in CreateInstalledAppNames
+<script language="VBScript">
+' // ***************************************************************************
+' // 
+' // File:      $URL: svn://lupvs802/MDTRepo/trunk/MDTShare/Scripts/MDTXDumpVars.wsf $
+' // 
+' // Version:   $Rev: 309 $
+' // 
+' // Purpose:   Dump Environment variables in log file and optionally into a xml file
+' // 
+' // Usage:     cscript $URL: svn://lupvs802/MDTRepo/trunk/MDTShare/Scripts/MDTXDumpVars.wsf $ [/outputfile:vars.xml] [/debug:true]
+' // 
+' // ***************************************************************************
+
+Option Explicit
+RunNewInstance
+
+'//—————————————————————————-
+'//  Global Constants
+'//—————————————————————————-
+
+' Const SOMETHING = 99
+
+'//—————————————————————————-
+'//  Main Class
+'//—————————————————————————-
+
+Class MDTXDumpVars
+
+    '//—————————————————————————-
+    '//  Global constant and variable declarations
+    '//—————————————————————————-
+
+    Dim iRetVal
+	Dim oTSEnvV4
+	Dim xmlName
+	
+	
+
+    '//—————————————————————————-
+    '//  Constructor to initialize needed global objects
+    '//—————————————————————————-
+
+    Private Sub Class_Initialize
+		xmlName = ""
+		iRetVal = Success
+		Set oTSEnvV4 = nothing
+    End Sub
+    '//—————————————————————————-
+    '//  Main routine
+    '//—————————————————————————-
+
+	' Store names in addition to GUID in InstalledApplications -> InstalledAppNames
+    Private Sub CreateInstalledAppNames
+		Dim oXMLApps, dAvailableApps, oNode, InstalledApps, oInstalledAppNames, AppInstalled
+		
+			set oXMLApps = new ConfigFile
+			oXMLApps.sFileType = "Applications"
+			set dAvailableApps = oXMLApps.FindAllItems
+			set InstalledApps = oEnvironment.ListItem("InstalledApplications")
+			set oInstalledAppNames = oEnvironment.ListItem("InstalledAppNames") ' should be blank at this stage.
+			For Each AppInstalled In InstalledApps
+			    oLogging.CreateEntry "Translating App GUID  " & AppInstalled, LogTypeInfo
+				set oNode = dAvailableApps.Item(AppInstalled)				
+				oInstalledAppNames.Add oUtility.SelectSingleNodeString(oNode,"Name"), ""			
+			Next
+			Set oEnvironment.ListItem("InstalledAppNames") = oInstalledAppNames
+	End Sub
+	
+	Function Main
+
+	Dim xmldoc
+	Dim oNode
+	Dim oVar
+
+	
+	if oUtility.Arguments.Exists("outputfile") then
+	    xmlName = oUtility.Arguments("outputfile")
+		Set xmldoc = oUtility.CreateXMLDOMObject
+		xmldoc.LoadXml "<?xml version=""1.0"" ?><MediaVarList Version=""4.00.5345.0000""></MediaVarList>"
+	End If
+	
+	CreateInstalledAppNames
+	
+	Err.Clear
+    Set oTSEnvV4 = CreateObject("Microsoft.SMS.TSEnvironment")
+	
+    If Err then
+        oLogging.CreateEntry "Cannot create Task Sequencer environment", LogTypeError
+        Set oTSEnvV4 = Nothing
+        Err.Clear
+    Else
+        oLogging.CreateEntry "Logging Task Sequencer Variables", LogTypeInfo
+        oLogging.CreateEntry "==================================================", LogTypeInfo
+        For Each oVar In oTSEnvV4.GetVariables
+            oLogging.CreateEntry "Property: " & oVar & "=" & oTSEnvV4(oVar), LogTypeInfo
+			if xmlName<>"" Then
+				Set oNode = xmldoc.CreateElement("var")
+				oNode.SetAttribute "name", UCase(oVar)
+				if InStr(1,oVar,"password",1) > 0 Then
+					oNode.AppendChild(xmldoc.createCDATASection("***Password removed***"))
+				Else
+					oNode.AppendChild(xmldoc.createCDATASection(oTSEnvV4(oVar)))
+				End If 
+				xmldoc.DocumentElement.AppendChild oNode
+			End If
+        Next 
+		if xmlName<>"" Then
+			On Error Resume Next
+			xmldoc.save xmlName
+			If Err Then
+				oLogging.CreateEntry "Unable to save variables list to " & xmlName, LogTypeWarning				
+			End If
+		End If
+    End if
+    End Function
+
+End Class
+
+   </script>
+</job>

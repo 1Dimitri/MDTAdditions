@@ -1,0 +1,217 @@
+<job id="MDTXSetUnat">
+   <script language="VBScript" src="ZTIUtility.vbs"/>
+   <script language="VBScript">
+' // ***************************************************************************
+' // 
+' // File:      $URL: svn://lupvs802/MDTRepo/trunk/MDTShare/Scripts/MDTXSetUnat.wsf $
+' // 
+' // Version:   $Rev: 155 $
+' // 
+' // Purpose:   add our settings to the unattended.xml to be processed:
+'//                1. search for adedicated file for the server
+' //              2. merge it with MDTXConfigure.xml rules
+'//              3. save it in temp folder and pass it to the OSDAnswerFilePath item
+' // Usage:     cscript $URL: svn://lupvs802/MDTRepo/trunk/MDTShare/Scripts/MDTXSetUnat.wsf $ /file:filetoload.xml [/share:\\server\share] [/folder:SomeFolder] [/debug:true]
+' //            the file will be searched in \\server\share\folder\filetoload.xml
+' // 
+' // ***************************************************************************
+Option Explicit
+RunNewInstance
+
+'//----------------------------------------------------------------------------
+'//  Global Constants
+'//----------------------------------------------------------------------------
+
+'//----------------------------------------------------------------------------
+'//  End declarations
+'//----------------------------------------------------------------------------
+
+
+
+
+'//----------------------------------------------------------------------------
+'//  Main Class
+'//----------------------------------------------------------------------------
+Class MDTXSetUnat
+	'//----------------------------------------------------------------------------
+	'//  Global constant and variable declarations
+	'//----------------------------------------------------------------------------
+
+	Dim iRetVal
+    
+	'  Public Variables
+	' Private variables
+
+	
+	'//----------------------------------------------------------------------------
+	'//  Constructor to initialize needed global objects
+	'//----------------------------------------------------------------------------
+
+	Private Sub Class_Initialize
+	   iRetVal = Success
+	End Sub
+	
+	'//----------------------------------------------------------------------------
+	'//  Main routine
+	'//----------------------------------------------------------------------------
+
+	Function Main
+	
+		' Local Variables
+	
+		Dim sArg		
+		Dim sShare
+		Dim sTempUnattended
+		Dim sConfig
+		Dim oUnattended
+		Dim oConfig
+		Dim iRC
+		Dim sTmp
+		Dim sPrev
+		Dim oNode
+		Dim sRemoveOnUpgrade
+		Dim sElement
+		Dim oPath
+		Dim oPaths
+		Dim oCurrent
+		Dim sRemoveIfBlank
+		Dim oRemove
+		Dim oRemoves
+		Dim sPath
+		Dim sFile
+		
+		
+		' Main script processing
+
+		On Error Resume Next
+
+		sArg = ""
+		sFile = ""
+		
+		if oUtility.Arguments.Exists("share") Then
+			sShare = oUtility.Arguments("share")
+			oUtility.ValidateConnection sShare
+			oUtility.VerifyPathExists sShare
+			If not oFSO.FolderExists(sShare) then
+				oLogging.CreateEntry "An invalid Share value of " & sShare & " was specified.", LogTypeError
+				Exit Function
+			End if
+			sArg = sArg & sShare & "\"
+		End If	
+		
+		if oUtility.Arguments.Exists("folder") Then
+			sArg = sArg & oUtility.Arguments("folder") & "\"
+		End If	
+		
+		if oUtility.Arguments.Exists("file") Then
+			sFile = oUtility.Arguments("file")
+			sArg = sArg & sFile
+			oLogging.CreateEntry "Loading " & sArg, LogTypeInfo
+		Else
+			oLogging.CreateEntry "No file argument specified", LogTypeDeprecated
+			Exit Function
+		End If	
+
+		If oFSO.FileExists(sArg) Then
+			sTempUnattended = oEnv("TEMP") & "\" & sFile
+			oEnvironment.Item("OSDAnswerFilePath") = sTempUnattended
+			oLogging.CreateEntry "File " & sArg & " exists. Changed OSDAnswerFilePath value to " & sTempUnattended, LogTypeInfo
+			Set oUnattended = CreateObject("MSXML2.DOMDocument")
+			oUnattended.Load sArg
+			oLogging.CreateEntry "File " & sArg & " Loaded" , LogTypeInfo
+			
+			' Loading configuration
+			iRC = oUtility.FindFile("MDTXConfigure.xml", sConfig)
+			TestAndFail iRC, 7000, "Unable to locate MDTXConfigure.xml"
+			oLogging.CreateEntry "Configuration file used: " & sConfig, LogTypeInfo
+			Set oConfig = CreateObject("MSXML2.DOMDocument")
+			oConfig.Load sConfig
+			
+			' Parsing
+			For each oNode in oConfig.documentElement.childNodes
+				oLogging.CreateEntry "Node: " & oNode.text, LogTypeInfo
+				sElement = oNode.getAttribute("id")
+				oLogging.CreateEntry "Parsing: " & sElement, LogTypeInfo
+				sRemoveOnUpgrade = oNode.getAttribute("removeOnUpgrade")
+				If IsNull(sRemoveOnUpgrade) then
+					sRemoveOnUpgrade = "FALSE"
+				End if
+				sRemoveOnUpgrade = UCase(sRemoveOnUpgrade)
+				If sRemoveOnUpgrade = "TRUE" and oEnvironment.Item("DeploymentType") = "UPGRADE" then
+					Set oPaths = oNode.selectNodes("xpath")
+					For each oPath in oPaths
+						If IsNull(oPath.getAttribute("key")) then
+							sPath = oPath.text
+						Else
+							sPath = oPath.text & "[Key=""" & oPath.getAttribute("key") & """]/Value"
+						End if
+						Set oCurrent = oUnattended.selectSingleNode(sPath)
+						If not (oCurrent is Nothing) then
+							oCurrent.parentNode.removeChild oCurrent
+							oLogging.CreateEntry "Removed " & sElement & " from " & sArg & " due to upgrade.", LogTypeInfo
+						End if
+					Next
+				Else
+					oLogging.CreateEntry "Is there a value for " & oEnvironment.Item(sElement), LogTypeInfo
+					sTmp = oEnvironment.Substitute(oEnvironment.Item(sElement))			
+					Set oPaths = oNode.selectNodes("xpath")
+					For each oPath in oPaths
+						If IsNull(oPath.getAttribute("key")) then
+							sPath = oPath.text
+						Else
+							sPath = oPath.text & "[Key=""" & oPath.getAttribute("key") & """]/Value"
+						End if						
+						Set oCurrent = oUnattended.selectSingleNode(sPath)
+						sRemoveIfBlank = oPath.getAttribute("removeIfBlank")
+						If IsNull(sRemoveIfBlank) then
+							sRemoveIfBlank = "FALSE"
+						End if
+						sRemoveIfBlank = UCase(sRemoveIfBlank)
+						If not IsNull(oCurrent) then
+							sPrev = oCurrent.text
+							If sTmp = "" and sPrev = "" and sRemoveIfBlank = "SELF" then
+								oCurrent.parentNode.removeChild oCurrent
+								oLogging.CreateEntry "Removed " & sPath & " from " & sArg & " because the value was blank.", LogTypeInfo
+							ElseIf sTmp = "" and sPrev = "" and sRemoveIfBlank = "PARENT" then
+								oCurrent.parentNode.parentNode.removeChild oCurrent.parentNode
+								oLogging.CreateEntry "Removed parent of " & sPath & " from " & sArg & " because the value was blank.", LogTypeInfo
+							ElseIf sTmp <> "" then
+								oCurrent.text = sTmp
+								oLogging.CreateEntry "Updated " & sArg & " with " & sElement & "=" & sTmp & " (value was " & sPrev & ")", LogTypeInfo
+								If not (oCurrent.parentNode.selectSingleNode("PlainText") is Nothing) then
+									oCurrent.parentNode.selectSingleNode("PlainText").text = "true"
+									oLogging.CreateEntry "Updated PlainText entry to true.", LogTypeInfo
+								End if
+							End If	
+						Else
+							oLogging.CreateEntry sPath & " is null", LogTypeInfo
+						End If
+					Next	
+					Set oRemoves = oNode.selectNodes("remove")
+					'oLogging.CreateEntry "REMOVE STUFF", LogTypeInfo
+					For each oRemove in oRemoves
+						sPath = oRemove.text
+						Set oCurrent = oUnattended.selectSingleNode(sPath)
+					'	If not (oCurrent is Nothing) then
+						If not IsNull(oCurrent) Then
+							oCurrent.parentNode.removeChild oCurrent
+							oLogging.CreateEntry "Removed " & sPath & " entry from " & sTempUnattended, LogTypeInfo
+						End if
+					Next
+				End If	
+			Next	
+		
+			' Saving
+			oUnattended.Save sTempUnattended
+			oLogging.CreateEntry "File " & sTempUnattended & " saved" , LogTypeInfo
+		Else
+			oLogging.CreateEntry "File: " & sArg & " doesn't exist. Not changing OSDAnswerFilePath value" , LogTypeInfo
+		End If
+		' End
+		oLogging.CreateEntry oUtility.ScriptName & " COMPLETED.  Return Value = " & iRetVal, LogTypeInfo
+		Main = iRetVal
+
+	End Function
+End Class
+   </script>
+</job>
