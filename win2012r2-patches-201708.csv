@@ -1,0 +1,62 @@
+Order,URL,DismFlags,PackageFlags,Comments
+1,http://download.windowsupdate.com/d/msdownload/update/software/crup/2016/06/windows8.1-kb3173424-x64_9a1c9e0082978d92abee71f2cfed5e0f4b6ce85c.msu,remount,,Servicing Stack update July 2016
+2,http://download.windowsupdate.com/c/msdownload/update/software/updt/2016/07/windows8.1-kb3172614-x64_e41365e643b98ab745c21dba17d1d3b6bb73cfcc.msu,,,July 2016 Update
+3,http://download.windowsupdate.com/d/msdownload/update/software/updt/2016/08/windows8.1-kb3179574-x64_f0a5e2ff991aec5e6978aa808f287f1b21195d6e.msu,,,August 2016 update 
+4,http://download.windowsupdate.com/c/msdownload/update/software/secu/2015/01/windows8.1-kb3000483-x64_4ce1d89ccbd1e1794a407b9e10106c0af08d2e17.msu,,,GPO Hardening 1 - https://blogs.technet.microsoft.com/srd/2015/02/10/ms15-011-ms15-014-hardening-group-policy/
+5,http://download.windowsupdate.com/c/msdownload/update/software/secu/2014/12/windows8.1-kb3004361-x64_19e7d86a45d17e8a66ff31166f9f7c00924fb244.msu,,,GPO Hardening 2 - https://blogs.technet.microsoft.com/srd/2015/02/10/ms15-011-ms15-014-hardening-group-policy/
+6,http://download.windowsupdate.com/d/msdownload/update/software/secu/2014/12/windows8.1-kb3004365-x64_659eca5ff41111d414c73f80fa1502d0876955b9.msu,,,WER Security
+7,http://download.windowsupdate.com/c/msdownload/update/software/secu/2014/11/windows8.1-kb3011780-x64_ae7432399d33daab7fda055af111d8bc1ae14e3b.msu,,,Kerberos Vulnerability
+8,http://download.windowsupdate.com/c/msdownload/update/software/ftpk/2017/05/windows8.1-kb3186539-x64_b3e84d9ccb08528df0b5d3b28772a9ccfcfec8a0.msu,,,.Net Framework 4.7
+9,http://download.windowsupdate.com/d/msdownload/update/software/updt/2017/03/windowsblue-kb3191564-x64_91d95a0ca035587d4c1babe491f51e06a1529843.msu,,,Windows Management Framework 5.1
+10,http://download.windowsupdate.com/d/msdownload/update/software/secu/2017/08/windows8.1-kb4034681-x64_1b4c0bd5f49b3ed6c7fd2cc5f6c3bb6d22d26b57.msu,,,August 2017 monthly rollup
+11,http://download.windowsupdate.com/c/msdownload/update/software/updt/2017/07/windows8.1-kb4033428-x64_6a48934e05183527ce3d476a15b0285d71781e72.msu,,,Deduplication bug
+12,http://download.windowsupdate.com/c/msdownload/update/software/secu/2014/11/windows8.1-kb3011780-x64_631b5c61b3047616f390252ea052f2ce7fe3b664.cab
+13,http://download.windowsupdate.com/d/msdownload/update/software/secu/2015/01/windows8.1-kb3023266-x64_dad371a7f62293a764dd892d5ca0463e7f7e116e.cab
+14,http://download.windowsupdate.com/c/msdownload/update/software/secu/2015/01/windows8.1-kb3019978-x64_fd77f36d51e48efd80b4fb1b95c3b5425e707ab8.cab
+15,http://download.windowsupdate.com/c/msdownload/update/software/secu/2014/12/windows8.1-kb3022777-x64_eb75535687d39f07ab37f1f95a4403e0ee067d39.cab
+16,http://download.windowsupdate.com/c/msdownload/update/software/secu/2014/12/windows8.1-kb3021674-x64_5a9635459cadceeae7f61a73ef899ebb99d3d648.cab
+17,http://download.windowsupdate.com/c/msdownload/update/software/secu/2014/12/windows8.1-kb3004361-x64_a0a5860f79eb1c8b76f97c2a14248cb519b6f1d0.cab
+18,http://download.windowsupdate.com/c/msdownload/update/software/secu/2015/01/windows8.1-kb3000483-x64_f304492d42d53e5621d846cf32527a07f45042e1.cab
+19,http://download.windowsupdate.com/d/msdownload/update/software/secu/2015/02/windows8.1-kb3030377-x64_87d46acf9b8b0de4e8d2261f05d53e7cf4cc92fa.cab
+20,http://download.windowsupdate.com/d/msdownload/update/software/secu/2015/02/windows8.1-kb3035126-x64_01667251d25ac56e0707df329e382cfb1e94cc49.cab
+21,http://download.windowsupdate.com/d/msdownload/update/software/secu/2015/03/windows8.1-kb3045755-x64_285f418c25f7c7d3ee6c0bbbdcb18020e99052b7.cab
+22,http://download.windowsupdate.com/c/msdownload/update/software/secu/2015/03/windows8.1-kb3045999-x64_0b7668d0cb45018b5fc0d3e894db839c43622a33.cab
+23,http://download.windowsupdate.com/d/msdownload/update/software/secu/2015/03/windows8.1-kb3045685-x64_b88ee2dca80420c21ed122772f0cba298082a6fe.cab
+24,http://download.windowsupdate.com/c/msdownload/update/software/secu/2015/04/windows8.1-kb3055642-x64_59cd30d9c50c52ac6cc2d1adb723160ef6957d2e.cab
+25,http://download.windowsupdate.com/d/msdownload/update/software/secu/2015/05/windows8.1-kb3059317-x64_53d78356964c6fcbf78a6b4254574edbe36877b5.cab
+26,http://download.windowsupdate.com/d/msdownload/update/software/secu/2015/06/windows8.1-kb3067505-x64_a7c28a6488de340ae72c6789a613e5ecd627cf44.cab
+27,http://download.windowsupdate.com/d/msdownload/update/software/secu/2015/06/windows8.1-kb3061512-x64_30db8b5b5239de797f4d7af64c9c57572a9faaa8.cab
+28,http://download.windowsupdate.com/d/msdownload/update/software/secu/2015/06/windows8.1-kb3004365-v2-x64_cb72fc5fc2dd5fb247469f9302495c81f54646b9.cab
+29,http://download.windowsupdate.com/d/msdownload/update/software/secu/2015/07/windows8.1-kb3046017-x64_6f80cae2289d25a37b2d06522245cad05921a33d.cab
+30,http://download.windowsupdate.com/d/msdownload/update/software/secu/2015/07/windows8.1-kb3071756-x64_a3914a24109577149a5eda07144fe736912ae0e4.cab
+31,http://download.windowsupdate.com/d/msdownload/update/software/secu/2015/07/windows8.1-kb3075220-x64_53cc5afdd13f15ba5144e56dedc22b372fcef63f.cab
+32,http://download.windowsupdate.com/d/msdownload/update/software/secu/2015/07/windows8.1-kb3076895-x64_7e55b1904683a0a2baa6f68327387aa8aa9ef6bd.cab
+33,http://download.windowsupdate.com/d/msdownload/update/software/secu/2015/08/windows8.1-kb3082089-x64_08cd5c63aabd9d1862197a057914b87f51a26cd8.cab
+34,http://download.windowsupdate.com/d/msdownload/update/software/secu/2015/08/windows8.1-kb3084135-x64_1585fa1306b5b3d4b27895a8f6ec3cda87f3c75e.cab
+35,http://download.windowsupdate.com/d/msdownload/update/software/secu/2015/08/windows8.1-kb3083992-x64_e52398958512e4024f21d7b75582bbfd97fadd19.cab
+36,http://download.windowsupdate.com/d/msdownload/update/software/secu/2015/08/windows8.1-kb3086255-x64_1c97751fb6c946381f53cd0cf24b962a73faa0ca.cab
+37,http://download.windowsupdate.com/c/msdownload/update/software/secu/2015/10/windows8.1-kb3092601-x64_842c333d489ca201a01cbfe5dce6ad24218d94c6.cab
+38,http://download.windowsupdate.com/d/msdownload/update/software/secu/2015/11/windows8.1-kb3108381-x64_8c073843a514f79aedd5969a881a3a34e60bcba4.cab
+39,http://download.windowsupdate.com/c/msdownload/update/software/secu/2015/11/windows8.1-kb3109103-x64_ab8fd7330b6ad8781258f12d668c21b20f98d6b9.cab
+40,http://download.windowsupdate.com/d/msdownload/update/software/secu/2015/12/windows8.1-kb3110329-x64_d684647aa6143ff34e428717a2afbf9dd2272804.cab
+41,http://download.windowsupdate.com/d/msdownload/update/software/secu/2015/12/windows8.1-kb3121918-x64_41b9c7cc92dc3e36a86f8f530aa680e9e738908d.cab
+42,http://download.windowsupdate.com/c/msdownload/update/software/secu/2016/01/windows8.1-kb3133043-x64_3736edb5ae210e1ce8786de0321de631faee78a5.cab
+43,http://download.windowsupdate.com/c/msdownload/update/software/secu/2016/01/windows8.1-kb3126434-x64_af45c9c317c41e559388fde3c83d50edba5bd675.cab
+44,http://download.windowsupdate.com/c/msdownload/update/software/secu/2016/01/windows8.1-kb3126587-x64_c96c573ee82705317bfc9c0dc87b6a1016ea9394.cab
+45,http://download.windowsupdate.com/c/msdownload/update/software/secu/2016/02/windows8.1-kb3139398-x64_80ea83cef2429c5fdc9742c52f2933ed39b6089d.cab
+46,http://download.windowsupdate.com/d/msdownload/update/software/secu/2016/02/windows8.1-kb3139914-x64_9f7dcf9091a8562409252c67893df3e90cd22b66.cab
+47,http://download.windowsupdate.com/c/msdownload/update/software/secu/2016/03/windows8.1-kb3146723-x64_a4bc61d3868546e9ad862b4fbd1f108534e05bf8.cab
+48,http://download.windowsupdate.com/c/msdownload/update/software/secu/2016/04/windows8.1-kb3156059-x64_11d2d91d15a02d79779f46abd4137ff78373bc4c.cab
+49,http://download.windowsupdate.com/c/msdownload/update/software/secu/2016/04/windows8.1-kb3155784-x64_1fa94b5b28bba02f73cc3e5f25728e14edd48107.cab
+50,http://download.windowsupdate.com/d/msdownload/update/software/secu/2016/04/windows8.1-kb3153704-x64_342164a9fd88c6d019f8c728c5489f14801f5f3c.cab
+51,http://download.windowsupdate.com/d/msdownload/update/software/secu/2016/05/windows8.1-kb3159398-x64_6e5eb79e13e00ce8311148b88bdbfe78706d5d70.cab
+52,http://download.windowsupdate.com/c/msdownload/update/software/secu/2016/05/windows8.1-kb3161949-x64_ae8dcf9a49b52f13979cb45e8ce0ba34889c98c9.cab
+53,http://download.windowsupdate.com/d/msdownload/update/software/secu/2016/05/windows8.1-kb3161958-x64_cf930ec036aa830611a373753a763d54d3fc0c71.cab
+54,http://download.windowsupdate.com/c/msdownload/update/software/secu/2016/05/windows8.1-kb3162343-x64_3c206340cbe222f402645ce71b66eb1f11bbfe20.cab
+55,http://download.windowsupdate.com/d/msdownload/update/software/secu/2016/06/windows8.1-kb3170455-x64_0c4001dcd1ffecea73e5b05754602a85a515f747.cab
+56,http://download.windowsupdate.com/d/msdownload/update/software/secu/2016/06/windows8.1-kb3169704-x64_eb42d0da78a6180cd333b66dc51701d80a6816ab.cab
+57,http://download.windowsupdate.com/d/msdownload/update/software/crup/2016/06/windows8.1-kb3173424-x64_b019e816baa20ca253d01ef345adc8cc792b7fde.cab
+58,http://download.windowsupdate.com/d/msdownload/update/software/secu/2016/07/windows8.1-kb3172729-x64_720c001256e3655bca6730d8d7aab2cf4f190f7d.cab
+59,http://download.windowsupdate.com/c/msdownload/update/software/secu/2016/08/windows8.1-kb3175024-x64_77a1e6f0b2c9c243f4e25e5edfcd98995ffdf330.cab
+60,http://download.windowsupdate.com/c/msdownload/update/software/secu/2016/09/windows8.1-kb3178539-x64_d963288a62d98c87271d0d7b6055456bbd307c81.cab
+
