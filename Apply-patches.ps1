@@ -350,7 +350,6 @@ $InstallWinPath = Join-Path $InstallWimFolder 'install.wim'
 New-Directory $TempPath
 $TempInstallWimPath = Join-Path $TempPath 'install.wim'
 $DestinationInstallWimPath = Join-Path (Join-Path $DestinationPath 'sources') 'install.wim'
-#$csv = Import-CSV 'E:\patchesround\win2008r2-patches-201706.csv' -TypeMap @{Order='Int';URL='String';DismFlags='String';PackageFlags='String';Comments='String'}
 $csv = Import-CSV $PatchesList -TypeMap @{Order='Int';URL='String';DismFlags='String';PackageFlags='String';Comments='String'}
 $Patches = Get-Patches -Patches $csv -TargetPath 'E:\downloads2' -TempDir 'Q:\TempCAB'
 Copy-Item $InstallWinPath $TempInstallWimPath -Force
@@ -364,3 +363,4 @@ Copy-Item  $TempInstallWimPath $DestinationInstallWimPath -Force
 
 #Apply-PatchListToOS -SourceRoot 'H:\' -DestinationPath E:\result -TempPath Q:\TempWIM -PatchesList E:\patchesround\win2012r2-patches-201708.csv -MOuntedPath 'E:\MountDir' -LOgDir 'Q:\Log'
 #Apply-PatchListToOS -SourceRoot 'H:\' -DestinationPath E:\result -TempPath Q:\TempWIM -PatchesList E:\patchesround\win2012r2-patches-201708.csv -MOuntedPath 'Q:\DirTEst' -LogDIr 'Q:\Log'
+Apply-PatchListToOS -SourceRoot 'I:\' -DestinationPath E:\result2008r2 -TempPath Q:\TempWIM -PatchesList E:\patchesround\win2008r2-patches-201709.csv -MountedPath 'E:\MountDir' -LogDir 'Q:\Log'
