@@ -343,19 +343,28 @@ param(
 [string] $TempPath,
 [string] $PatchesList,
 [string] $LogDir,
-[string]$MountedPath
+[string]$MountedPath,
+[int[]] $Indexes
 )
 $InstallWimFolder = Join-Path $SourceRoot 'sources'
 $InstallWinPath = Join-Path $InstallWimFolder 'install.wim'
 New-Directory $TempPath
 $TempInstallWimPath = Join-Path $TempPath 'install.wim'
 $DestinationInstallWimPath = Join-Path (Join-Path $DestinationPath 'sources') 'install.wim'
+#$csv = Import-CSV 'E:\patchesround\win2008r2-patches-201706.csv' -TypeMap @{Order='Int';URL='String';DismFlags='String';PackageFlags='String';Comments='String'}
 $csv = Import-CSV $PatchesList -TypeMap @{Order='Int';URL='String';DismFlags='String';PackageFlags='String';Comments='String'}
 $Patches = Get-Patches -Patches $csv -TargetPath 'E:\downloads2' -TempDir 'Q:\TempCAB'
 Copy-Item $InstallWinPath $TempInstallWimPath -Force
 Write-Verbose "Getting WIM Details from $TempInstallWimPath"
-$ImageInfo = Get-WindowsImage -ImagePath $TempInstallWimPath 
-$ImageInfo.ImageIndex | ForEach-Object { Apply-PatchesToIndexImage -Patches $patches -ImagePath $TempInstallWimPath -ImageIndex $_ -LogDir $LogDir -MountedPath $MountedPath}
+if ($PSBoundParameters.ContainsKey('Indexes')) {
+   $ImageIndexes = $Indexes
+}
+else {
+    $ImageInfo = Get-WindowsImage -ImagePath $TempInstallWimPath 
+    $ImageIndexes = $ImageInfo.ImageIndex 
+}
+
+$ImageIndexes | ForEach-Object { Apply-PatchesToIndexImage -Patches $patches -ImagePath $TempInstallWimPath -ImageIndex $_ -LogDir $LogDir -MountedPath $MountedPath}
 New-Directory $DestinationPath
 robocopy $SourceRoot $DestinationPath /E /XF install.wim
 Copy-Item  $TempInstallWimPath $DestinationInstallWimPath -Force
@@ -363,4 +372,5 @@ Copy-Item  $TempInstallWimPath $DestinationInstallWimPath -Force
 
 #Apply-PatchListToOS -SourceRoot 'H:\' -DestinationPath E:\result -TempPath Q:\TempWIM -PatchesList E:\patchesround\win2012r2-patches-201708.csv -MOuntedPath 'E:\MountDir' -LOgDir 'Q:\Log'
 #Apply-PatchListToOS -SourceRoot 'H:\' -DestinationPath E:\result -TempPath Q:\TempWIM -PatchesList E:\patchesround\win2012r2-patches-201708.csv -MOuntedPath 'Q:\DirTEst' -LogDIr 'Q:\Log'
-Apply-PatchListToOS -SourceRoot 'I:\' -DestinationPath E:\result2008r2 -TempPath Q:\TempWIM -PatchesList E:\patchesround\win2008r2-patches-201709.csv -MountedPath 'E:\MountDir' -LogDir 'Q:\Log'
+#Apply-PatchListToOS -SourceRoot 'I:\' -DestinationPath E:\result2008r2 -TempPath Q:\TempWIM -PatchesList E:\patchesround\win2008r2-patches-201709.csv -MountedPath 'E:\MountDir' -LogDir 'Q:\Log'
+Apply-PatchListToOS -SourceRoot 'I:\' -DestinationPath E:\result2008r2 -TempPath Q:\TempWIM -PatchesList E:\patchesround\win2008r2-patches-201709.csv -MountedPath 'E:\MountDir' -LogDir 'Q:\Log' -Indexes 1

@@ -1,9 +1,27 @@
 Order,URL,DismFlags,PackageFlags,Comments
-1,https://download.microsoft.com/download/5/D/0/5D0821EB-A92D-4CA2-9020-EC41D56B074F/Windows6.1-KB3020369-x64.msu,remount, SErvicing stack update
-2,http://download.windowsupdate.com/d/msdownload/update/software/updt/2016/05/windows6.1-kb3125574-v4-x64_2dafb1d203c8964239af3048b5dd4b1264cd93b9.msu
+1,https://download.microsoft.com/download/5/D/0/5D0821EB-A92D-4CA2-9020-EC41D56B074F/Windows6.1-KB3020369-x64.msu,remount,,Servicing stack update
+2,http://download.windowsupdate.com/d/msdownload/update/software/updt/2016/05/windows6.1-kb3125574-v4-x64_2dafb1d203c8964239af3048b5dd4b1264cd93b9.msu,,,Convenience Rollup
 3,http://download.windowsupdate.com/msdownload/update/software/updt/2012/09/windows6.1-kb2729094-v2-x64_e1a3ecc5030a51711f558f90dd1db52e24ce074b.msu
 4,http://download.windowsupdate.com/msdownload/update/software/ftpk/2013/02/windows6.1-kb2670838-x64_9f667ff60e80b64cbed2774681302baeaf0fc6a6.msu
 5,http://download.windowsupdate.com/d/msdownload/update/software/updt/2013/08/windows6.1-kb2834140-v2-x64_3db9d9b3dc20515bf4b164821b721402e34ad9d6.msu
 6,http://download.windowsupdate.com/d/msdownload/update/software/updt/2014/08/windows6.1-kb2970228-x64_929e88aa259841f7936be32c82da56bf2ba22f73.msu
 7,http://download.microsoft.com/download/7/1/7/7179A150-F2D2-4502-9D70-4B59EA148EAA/IE11-Windows6.1-x64-en-us.exe,,IECAB, Internet Explorer 11 English US
-8,http://download.windowsupdate.com/d/msdownload/update/software/secu/2017/08/windows6.1-kb4038777-x64_193d527f3487640fc18f1f596c0434e64cd20c51.msu,,,September 2017 rollup
+9,http://download.windowsupdate.com/msdownload/update/software/secu/2012/04/windows6.1-kb2676562-x64_446b9165a9a52540896cefb69f6de1d193416056.msu,,,remaining after Convenience Rollup linked to http://download.windowsupdate.com/msdownload/update/software/secu/2012/04/mpsyschk_479a484f94dee6cf64dc9525129bb402693112db.exe
+10,http://download.windowsupdate.com/msdownload/update/software/secu/2012/05/windows6.1-kb2667402-v2-x64_15c04bd5944cd9b34a294a25b96911057593c465.msu,,,remaining after Convenience Rollup
+11,http://download.windowsupdate.com/msdownload/update/software/secu/2012/06/windows6.1-kb2698365-x64_f3ad859582ad240c95b9ed867bc9b99e39d15ba9.msu
+12,http://download.windowsupdate.com/msdownload/update/software/secu/2013/03/windows6.1-kb2813347-x64_76a7cdfabd3778dc9b4ffb603bbb5d9eaf3143aa.msu
+13,http://download.windowsupdate.com/d/msdownload/update/software/secu/2013/07/windows6.1-kb2864058-x64_9738edf7d740a8d3bedb69d235da0127a7a227fe.msu
+14,http://download.windowsupdate.com/d/msdownload/update/software/secu/2013/11/windows6.1-kb2900986-x64_a56afda70b8208665280cb79d0a6704bb7dcc3bb.msu
+15,http://download.windowsupdate.com/c/msdownload/update/software/secu/2013/12/windows6.1-kb2862330-v2-x64_c1a8b768d8c22640d0a80966d124f441eb625934.msu
+16,http://download.windowsupdate.com/c/msdownload/update/software/secu/2013/12/windows6.1-kb2912390-x64_413ad3ebc0199bd6d0ec00aaa0a17c73a00b8c30.msu
+17,http://download.windowsupdate.com/d/msdownload/update/software/updt/2014/09/windows6.1-kb2978092-x64_dd830519aa3d6716949e45856851d87c1edef522.msu
+18,http://download.windowsupdate.com/c/msdownload/update/software/updt/2014/09/windows6.1-kb2977728-x64_f3007869bf6d406a35ed892803d696bfcf97d96c.msu
+19,http://download.windowsupdate.com/d/msdownload/update/software/updt/2015/02/windows6.1-kb3006137-x64_3e0f0b8edfd6cda0c37fba3575724c6e829cdda3.msu
+20,http://download.windowsupdate.com/d/msdownload/update/software/updt/2015/06/windows6.1-kb3068708-x64_1ce8daca73621d47367242d57f4a9fd702d31df9.msu,,,linked to http://download.windowsupdate.com/d/msdownload/update/software/updt/2015/06/mpsyschk_8937ea2bb558597829213d26a922175e68bd84c5.exe
+21,http://download.windowsupdate.com/d/msdownload/update/software/updt/2015/06/windows6.1-kb3054205-x64_6916a5669838169f4288ee2727ae80988242d281.msu
+22,http://download.windowsupdate.com/d/msdownload/update/software/updt/2015/08/windows6.1-kb3080149-x64_f25965cefd63a0188b1b6f4aad476a6bd28b68ce.msu
+23,http://download.windowsupdate.com/d/msdownload/update/software/updt/2016/01/windows6.1-kb3102429-v2-x64_fbf07105ff35e936f413663e0f4900cb7055368a.msu
+24,http://download.windowsupdate.com/c/msdownload/update/software/updt/2016/01/windows6.1-kb3135445-x64_dedb49db575d1335e08b64115acbfb58ff1c79cc.msu
+25,http://download.windowsupdate.com/d/msdownload/update/software/updt/2016/02/windows6.1-kb3118401-x64_99153d75ee4d103a429464cdd9c63ef4e4957140.msu
+26,http://download.windowsupdate.com/c/msdownload/update/software/updt/2016/04/windows6.1-kb3140245-x64_5b067ffb69a94a6e5f9da89ce88c658e52a0dec0.msu
+50,http://download.windowsupdate.com/d/msdownload/update/software/secu/2017/08/windows6.1-kb4038777-x64_193d527f3487640fc18f1f596c0434e64cd20c51.msu,,,September 2017 rollup
