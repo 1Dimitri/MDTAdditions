@@ -354,6 +354,7 @@ $DestinationInstallWimPath = Join-Path (Join-Path $DestinationPath 'sources') 'i
 #$csv = Import-CSV 'E:\patchesround\win2008r2-patches-201706.csv' -TypeMap @{Order='Int';URL='String';DismFlags='String';PackageFlags='String';Comments='String'}
 $csv = Import-CSV $PatchesList -TypeMap @{Order='Int';URL='String';DismFlags='String';PackageFlags='String';Comments='String'}
 $Patches = Get-Patches -Patches $csv -TargetPath 'E:\downloads2' -TempDir 'Q:\TempCAB'
+Write-Verbose "Copying $($InstallWinPath) to $($TempInstallWimPath)"
 Copy-Item $InstallWinPath $TempInstallWimPath -Force
 Write-Verbose "Getting WIM Details from $TempInstallWimPath"
 if ($PSBoundParameters.ContainsKey('Indexes')) {
@@ -373,4 +374,10 @@ Copy-Item  $TempInstallWimPath $DestinationInstallWimPath -Force
 #Apply-PatchListToOS -SourceRoot 'H:\' -DestinationPath E:\result -TempPath Q:\TempWIM -PatchesList E:\patchesround\win2012r2-patches-201708.csv -MOuntedPath 'E:\MountDir' -LOgDir 'Q:\Log'
 #Apply-PatchListToOS -SourceRoot 'H:\' -DestinationPath E:\result -TempPath Q:\TempWIM -PatchesList E:\patchesround\win2012r2-patches-201708.csv -MOuntedPath 'Q:\DirTEst' -LogDIr 'Q:\Log'
 #Apply-PatchListToOS -SourceRoot 'I:\' -DestinationPath E:\result2008r2 -TempPath Q:\TempWIM -PatchesList E:\patchesround\win2008r2-patches-201709.csv -MountedPath 'E:\MountDir' -LogDir 'Q:\Log'
-Apply-PatchListToOS -SourceRoot 'I:\' -DestinationPath E:\result2008r2 -TempPath Q:\TempWIM -PatchesList E:\patchesround\win2008r2-patches-201709.csv -MountedPath 'E:\MountDir' -LogDir 'Q:\Log' -Indexes 1
+#Apply-PatchListToOS -SourceRoot 'I:\' -DestinationPath E:\result2008r2 -TempPath Q:\TempWIM -PatchesList E:\patchesround\win2008r2-patches-201709.csv -MountedPath 'E:\MountDir' -LogDir 'Q:\Log' -Indexes 1
+# Windows 2008 R2 Standard Only, October 2017
+#Apply-PatchListToOS -SourceRoot 'I:\' -DestinationPath E:\result2008r2 -TempPath Q:\TempWIM -PatchesList E:\patchesround\win2008r2-patches-201710.csv -MountedPath 'E:\MountDir' -LogDir 'Q:\Log' -Indexes 1
+# Windows 2012 R2 Standard Only (not core), October 2017
+#Apply-PatchListToOS -SourceRoot 'H:\' -DestinationPath E:\result2012r2 -TempPath Q:\TempWIM -PatchesList E:\patchesround\win2012r2-patches-201710.csv -MountedPath 'E:\MountDir' -LogDir 'Q:\Log' -Indexes 2
+# Windows 2016 - October 
+# Apply-PatchListToOS -SourceRoot 'J:\' -DestinationPath E:\result2016 -TempPath Q:\TempWIM -PatchesList E:\patchesround\win2016-patches-201710.csv -MountedPath 'E:\MountDir' -LogDir 'Q:\Log' -Indexes 2

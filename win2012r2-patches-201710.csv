@@ -1,0 +1,7 @@
+Order,URL,DismFlags,PackageFlags,Comments
+1,http://download.windowsupdate.com/d/msdownload/update/software/crup/2016/06/windows8.1-kb3173424-x64_9a1c9e0082978d92abee71f2cfed5e0f4b6ce85c.msu,remount,,Servicing Stack update July 2016
+2,http://download.windowsupdate.com/c/msdownload/update/software/updt/2016/07/windows8.1-kb3172614-x64_e41365e643b98ab745c21dba17d1d3b6bb73cfcc.msu,,,July 2016 Update
+3,http://download.windowsupdate.com/d/msdownload/update/software/updt/2016/08/windows8.1-kb3179574-x64_f0a5e2ff991aec5e6978aa808f287f1b21195d6e.msu,,,August 2016 update 
+8,http://download.windowsupdate.com/c/msdownload/update/software/ftpk/2017/05/windows8.1-kb3186539-x64_b3e84d9ccb08528df0b5d3b28772a9ccfcfec8a0.msu,,,.Net Framework 4.7
+9,http://download.windowsupdate.com/d/msdownload/update/software/updt/2017/03/windowsblue-kb3191564-x64_91d95a0ca035587d4c1babe491f51e06a1529843.msu,,,Windows Management Framework 5.1
+10,http://download.windowsupdate.com/c/msdownload/update/software/secu/2017/10/windows8.1-kb4041693-x64_31e473824b705bf05f3befc423d39fa0c6d0fb49.msu,,,October 2017 monthly rollup
